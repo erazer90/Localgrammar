@@ -23,7 +23,7 @@
   }
 
   function validWord(value) {
-    return value.length <= 100 && /^[\p{L}\p{M}][\p{L}\p{M}\d'’\-]*$/u.test(value);
+    return value.length <= 100 && /^[\p{L}\p{M}][\p{L}\p{M}\d'’-]*$/u.test(value);
   }
 
   function strings(values) {

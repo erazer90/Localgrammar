@@ -1,12 +1,14 @@
-# Local Grammar Pro 4.0.0
+# Local Grammar Pro
 
 Offline-Grammatikprüfung für Chrome und Chromium. LingoTweaker-WASM 0.2.8 prüft Rechtschreibung, Grammatik und Stil auf Deutsch (Deutschland), Englisch (USA) und Englisch (Großbritannien). Das Archiv enthält den vollständigen Erweiterungscode, die WASM-Engine und beide Sprachpakete.
+
+[![CI](https://github.com/erazer90/Localgrammar/actions/workflows/ci.yml/badge.svg)](https://github.com/erazer90/Localgrammar/actions/workflows/ci.yml)
 
 ## Installation
 
 Für die Entwicklung kannst du dieses Repository klonen und direkt den Ordner mit der `manifest.json` als entpackte Erweiterung laden. Nach Codeänderungen die Erweiterung und die Test-Webseite neu laden.
 
-1. Das ZIP-Archiv entpacken. Chrome oder Chromium ab Version 123 öffnen.
+1. Das ZIP-Archiv aus den [Releases](https://github.com/erazer90/Localgrammar/releases) herunterladen und entpacken. Chrome oder Chromium ab Version 123 öffnen.
 2. `chrome://extensions` aufrufen und **Entwicklermodus** aktivieren.
 3. **Entpackte Erweiterung laden** und den Ordner `LocalGrammarPro` mit der `manifest.json` auswählen.
 4. Bereits offene Webseiten neu laden. Zum Ausprobieren in ein mehrzeiliges Web-Textfeld schreiben: „Ich habe gestern ein Film gesehen. Die Gramatik ist schwierig.“
@@ -28,7 +30,7 @@ Bei einem Update der bisherigen entpackten Installation den Inhalt ihres bestehe
 - Die automatische Erkennung wählt eine Sprache pro Prüfung. Bei kurzen, gemischten oder mehrdeutigen Texten hilft eine feste Sprachauswahl. Die Abdeckung hängt vom LingoTweaker-Port ab und kann vom Java- und Premium-Angebot von LanguageTool abweichen.
 - DOM-basierte Editoren wie Gmail oder Notion nutzen dieselbe generische Integration wie andere Websites. Diese Dienste wurden nicht im Livebetrieb getestet. Google Docs rendert den Dokumenttext typischerweise auf einem Canvas. Inline-Markierung und direkte Korrektur des Dokuments stehen dort regulär nicht zur Verfügung. Der Auswahlbericht funktioniert, wenn Chrome den markierten Text im Kontextmenü bereitstellt.
 - Auf Chrome-internen Seiten und in passwortgeschützten oder bestimmten sensiblen Formularfeldern läuft die Inline-Prüfung nicht. Bei komplexen Editoren und bei Treffern über Absatzgrenzen kann eine direkte Übernahme fehlen.
-- Geprüft in Chromium anhand lokaler Textfelder und formatierter Editoren mit realer WASM-Engine, Web Worker und simulierten Erweiterungs-APIs. Die Browser-Richtlinie der Testumgebung blockierte die Installation entpackter Erweiterungen.
+- Die Browser-Tests laden die echte MV3-Erweiterung in einem temporären Chromium-Profil. Sie prüfen den WASM-Worker ohne Netzverbindung, Korrekturen in Textfeldern und das Rückgängigmachen formatierter Änderungen.
 
 ## Quellcode
 
@@ -40,3 +42,16 @@ Bei einem Update der bisherigen entpackten Installation den Inhalt ihres bestehe
 | `ui/` | Popup, Optionen und Auswahlbericht |
 
 Die Installation braucht keinen Build-Schritt und keine zusätzlichen Pakete. Die Sprachdaten sind im Lieferumfang. Versionsstand, Prüfsummen, Quellcode und Lizenzhinweise stehen in [engine/vendor/SOURCE.md](engine/vendor/SOURCE.md).
+
+## Entwicklung
+
+Mit Node.js 24 kannst du die Prüfungen und den ZIP-Build lokal ausführen.
+
+```bash
+npm ci
+npm run check
+npm test
+npm run build
+```
+
+Das installierbare ZIP und seine SHA-256-Prüfsumme landen unter `dist/`. Browser-Tests und Release-Ablauf stehen in der [Beitragsanleitung](https://github.com/erazer90/Localgrammar/blob/main/CONTRIBUTING.md). [Lizenzhinweise](LICENSES.md)
