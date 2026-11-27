@@ -235,7 +235,16 @@
         || editorApi.editorFor(event) !== state.editor) return;
     const hits = marks.hits.filter(({ box }) => event.clientX >= box.left && event.clientX <= box.right
       && event.clientY >= box.top && event.clientY <= box.bottom);
-    if (hits.length) show(hits[0].issue, hits[0].box, [...new Set(hits.map(hit => hit.issue))]);
+    if (!hits.length) return;
+    const current = state;
+    const revision = current.revision;
+    // Chromium can restore textarea focus as the default action of this click.
+    // Open afterwards so the card keeps keyboard focus, including after undo.
+    setTimeout(() => {
+      if (state === current && current.revision === revision && editorApi.focused() === current.editor) {
+        show(hits[0].issue, hits[0].box, [...new Set(hits.map(hit => hit.issue))]);
+      }
+    }, 0);
   }, true);
   document.addEventListener("input", event => {
     const editor = editorApi.editorFor(event);
