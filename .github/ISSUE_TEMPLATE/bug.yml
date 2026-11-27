@@ -1,0 +1,17 @@
+name: Fehler melden
+description: Melde ein reproduzierbares Problem mit der Erweiterung.
+body:
+  - type: input
+    id: versions
+    attributes:
+      label: Erweiterungs- und Browser-Version
+      placeholder: Local Grammar Pro 4.0.0, Chromium 156
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Schritte, erwartetes und tatsächliches Verhalten
+      description: Nenne die Prüfsprache und den Editor. Verwende erfundenen Beispieltext ohne persönliche Daten.
+    validations:
+      required: true

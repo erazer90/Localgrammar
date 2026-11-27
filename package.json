@@ -1,0 +1,22 @@
+{
+  "name": "local-grammar-pro",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "check": "eslint . && npm run verify",
+    "verify": "node scripts/verify-extension.js",
+    "test": "node --test tests/unit/*.test.js",
+    "test:e2e": "playwright test",
+    "build": "node scripts/build.js"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@playwright/test": "1.65.1",
+    "eslint": "10.15.0",
+    "fflate": "0.8.3",
+    "globals": "17.14.0"
+  }
+}
