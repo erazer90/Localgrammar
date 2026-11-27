@@ -164,3 +164,60 @@ test("correct German punctuation and equivalent Unicode spellings are left alone
   const { issues } = await checkWithWasm(text, "de", "", [], [], false);
   assert.deepEqual(issues, []);
 });
+
+test("German word forms use the noun and verb paradigms in the offline dictionary", async () => {
+  const pairs = [
+    ["Ich spreche mit <mein> Chef.", "meinem"],
+    ["Heute fahre ich mit <meine> Chefin zur Messe.", "meiner"],
+    ["Sie reist mit <ihre Kinder>.", "ihren Kindern"],
+    ["Er fährt mit <sein Kollege> nach Berlin.", "seinem Kollegen"],
+    ["Sie treffen sich mit <ihre Freunde>.", "ihren Freunden"],
+    ["Wir wohnen bei <unser neuer> Nachbar.", "unserem neuen"],
+    ["Ich telefoniere mit <einen> netten Kollegen.", "einem"],
+    ["Sie geht ohne <einem> guten Grund.", "einen"],
+    ["Der Brief ist für <meinem> Kind.", "mein"],
+    ["Er zeichnet mit <das> Band.", "dem"],
+    ["Ich fahre am <montag> nach Berlin.", "Montag"],
+    ["Sie hört Musik beim <kochen>.", "Kochen"],
+    ["Wir warten vor dem Haus, er <kommen> gleich.", "kommt"],
+    ["Ich <fahren> morgen nach Berlin.", "fahre"],
+    ["Die Kinder <spielt> draußen.", "spielen"],
+    ["Der Mann <spielen>.", "spielt"],
+    ["Ich glaube, dass wir <komme>.", "kommen"],
+    ["Wenn die Sonne scheint| packe ich meine Tasche.", ","],
+    ["Der Kuchen, den ich gestern backte| schmeckt gut.", ","]
+  ];
+  let text = "";
+  const expected = pairs.map(([example, suggestion]) => {
+    const original = example.match(/<([^>]+)>/u)?.[1] ?? "";
+    const start = text.length + example.search(/[|<]/u);
+    text += example.replace(/[|<>]/gu, "") + "\n";
+    return { example, start, end: start + original.length, original, suggestion };
+  });
+  const result = await checkWithWasm(text, "de", "", [], [], false);
+  for (const { example, start, end, original, suggestion } of expected) {
+    assert.ok(result.issues.some(issue => issue.start === start && issue.end === end
+      && issue.original === original && issue.suggestions[0] === suggestion), example);
+  }
+});
+
+test("German word forms preserve valid ambiguity and fixed expressions", async () => {
+  const text = [
+    "Sie spricht mit ihrem Chef und mit ihrer Chefin.",
+    "Er war mit der Band unterwegs. Sie spielt mit dem Band.",
+    "Sie reist mit ihren Kindern und ohne ihren Freund.",
+    "Mit meinem Kollegen gehe ich zum Bahnhof.",
+    "Durch den grünen Park laufen wir am besten morgens.",
+    "Das ist eine Frage für meinen neuen Chef.",
+    "Wir tun es um der guten Sache willen.",
+    "Es sind viele Leute hier.",
+    "Die Kinder sieht der Lehrer.",
+    "Die Frau und der Mann spielen.",
+    "Er sagt, er komme morgen.",
+    "Das ist ein Buch, das ich haben kann.",
+    "Wenn die Sonne scheint, packe ich meine Tasche."
+  ].join("\n");
+  const { issues } = await checkWithWasm(text, "de", "", [], [], false);
+  assert.deepEqual(issues.filter(issue => ["DE_ORT_NOMEN", "DE_PRAEPOSITION_KASUS", "DE_SUBJEKT_VERB",
+    "DE_SEIN_KONGRUENZ", "DE_KOMMA_NEBENSATZ"].includes(issue.id)), []);
+});

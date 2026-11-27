@@ -1,5 +1,6 @@
 import "../settings.js";
 import { MAX_ISSUES } from "./limits.js";
+import { germanAgreement } from "./german-agreement.js";
 import { germanCorrections } from "./german.js";
 import { germanPunctuation } from "./punctuation.js";
 
@@ -17,22 +18,31 @@ function editKey(issue, replacement) {
   return JSON.stringify([issue.start + prefix, issue.start + end, replacement.slice(prefix, replacementEnd)]);
 }
 
-export function finishIssues(text, language, base, ignored, dictionary, styleHints) {
+export function finishIssues(text, language, base, ignored, dictionary, styleHints, lexicon = null) {
   const accepted = new Set(dictionary.map(LGPSettings.wordKey));
-  const extra = language === "de" ? [...germanCorrections(text), ...germanPunctuation(text)] : [];
-  const localPunctuation = new Set(extra.filter(issue => issue.id.startsWith("DE_KOMMA_")
-    || issue.id.startsWith("DE_SATZZEICHEN_")).map(issue => editKey(issue, issue.suggestions[0])));
+  const extra = language === "de" ? [...germanCorrections(text), ...germanPunctuation(text, lexicon)] : [];
+  if (lexicon && language === "de") extra.push(...germanAgreement(text, lexicon));
+  const byEdit = new Map();
+  for (const issue of extra) {
+    const key = editKey(issue, issue.suggestions[0]);
+    if (!byEdit.has(key)) byEdit.set(key, issue);
+  }
   const visible = issue => !ignored.has(issue.id) && (styleHints || issue.kind !== "style")
     && (issue.kind !== "spelling" || !accepted.has(LGPSettings.wordKey(issue.original)));
-  const local = extra.filter(issue => visible(issue)
+  const local = [...byEdit.values()].filter(issue => visible(issue)
     && !(ignored.has("DE_KOMMA_DASS") && issue.id === "DE_KOMMA_NEBENSATZ"
       && /^[ \t]+dass\b/iu.test(text.slice(issue.start)))
     && !(issue.kind === "spelling" && ignored.has("GERMAN_SPELLER_RULE")));
-  const bySpan = new Map(extra.map(issue => [`${issue.start}:${issue.end}`, issue]));
+  const bySpan = new Map([...byEdit.values()].map(issue => [`${issue.start}:${issue.end}`, issue]));
   const issues = [...local];
   for (const issue of base) {
     if (!visible(issue)) continue;
-    if (issue.suggestions.some(value => localPunctuation.has(editKey(issue, value)))) continue;
+    if (issue.suggestions.some(value => {
+      const preferred = byEdit.get(editKey(issue, value));
+      return preferred && (preferred.start !== issue.start || preferred.end !== issue.end);
+    })) continue;
+    if (issue.id === "SUBJECT_VERB_AGREEMENT" && !issue.suggestions.length
+        && local.some(item => item.id === "DE_SUBJEKT_VERB" && item.start >= issue.start && item.end <= issue.end)) continue;
     if (language === "de" && issue.id === "IM_IHM_SPELLING_RULE"
         && extra.some(item => item.id === "DE_ORT_NOMEN"
           && /^[ \t]+$/u.test(text.slice(issue.end, item.start)))) continue;

@@ -1,4 +1,5 @@
 import { finishIssues } from "./findings.js";
+import { germanLexicon } from "./german-lexicon.js";
 import { rankSpelling } from "./spelling.js";
 import { normalizeText } from "./text.js";
 import { limitText } from "./limits.js";
@@ -28,9 +29,17 @@ async function loadEngine(language, day) {
   const url = new URL(`./vendor/packs/${base}.pack.gz`, import.meta.url);
   const response = await fetch(url);
   if (!response.ok) throw new Error("Missing local language data");
-  const bytes = await new Response(response.body.pipeThrough(new DecompressionStream("gzip"))).arrayBuffer();
-  return new LtEngine(variants[language], new Uint8Array(bytes),
-    JSON.stringify({ today: day, variant: variants[language] }));
+  const bytes = new Uint8Array(await new Response(response.body.pipeThrough(new DecompressionStream("gzip"))).arrayBuffer());
+  let lexicon = null;
+  if (language === "de") {
+    try {
+      lexicon = germanLexicon(bytes);
+    } catch (error) {
+      console.warn("German morphology data could not be loaded.", error);
+    }
+  }
+  const engine = new LtEngine(variants[language], bytes, JSON.stringify({ today: day, variant: variants[language] }));
+  return { engine, lexicon, day };
 }
 
 async function getEngine(language) {
@@ -39,7 +48,7 @@ async function getEngine(language) {
   if (cached?.day === day) {
     cache.delete(language);
     cache.set(language, cached);
-    return cached.engine;
+    return cached;
   }
   if (cached) {
     cached.engine.free();
@@ -51,9 +60,9 @@ async function getEngine(language) {
     cache.get(oldest).engine.free();
     cache.delete(oldest);
   }
-  const engine = await loadEngine(language, day);
-  cache.set(language, { day, engine });
-  return engine;
+  const loaded = await loadEngine(language, day);
+  cache.set(language, loaded);
+  return loaded;
 }
 
 // LingoTweaker returns UTF-8 byte offsets, while DOM Range and JS use UTF-16.
@@ -92,7 +101,7 @@ export async function checkWithWasm(value, preference, hint, dictionary, ignored
   if (!language) return result;
   result.language = language;
 
-  const engine = await getEngine(language);
+  const { engine, lexicon } = await getEngine(language);
   const { matches } = JSON.parse(engine.check_matches_json(text));
   const offsets = utf16Offsets(text);
   const ignored = new Set(ignoredRules.flatMap(id => [id, ...(previousRuleIds.get(id) || [])]));
@@ -116,6 +125,6 @@ export async function checkWithWasm(value, preference, hint, dictionary, ignored
     result.issues.push({ id, start, end, original, message, kind,
       suggestions: (spelling && language === "de" ? rankSpelling(original, suggestions) : suggestions).slice(0, 8) });
   }
-  result.issues = restore(finishIssues(text, language, result.issues, ignored, dictionary, styleHints));
+  result.issues = restore(finishIssues(text, language, result.issues, ignored, dictionary, styleHints, lexicon));
   return result;
 }

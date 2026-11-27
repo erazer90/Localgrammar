@@ -12,7 +12,7 @@ const spelling = new Map(Object.entries({
 const letter = "[\\p{L}\\p{M}\\p{N}_-]";
 const misspellings = new RegExp(`(?<!${letter})(${[...spelling.keys()].join("|")})(?!${letter})`, "dgiu");
 
-const seinBySubject = { ich: "bin", du: "bist", er: "ist", es: "ist", wir: "sind" };
+const seinBySubject = { ich: "bin", du: "bist", er: "ist", wir: "sind" };
 const participles = { vergisst: "vergessen", sieht: "gesehen", findet: "gefunden", schreibt: "geschrieben" };
 
 const rules = [
@@ -28,7 +28,7 @@ const rules = [
     () => "Spiegel", "spelling", "Meinst du den Spiegel?"],
   ["DE_PRONOMEN_IHN", /(?<!\p{L})(?:kann|konnte|habe|hat|sehe|sieht|finde|suche)[ \t]+(IIhn)(?![\p{L}-])/dgu,
     () => "ihn", "grammar", "Das Pronomen lautet hier „ihn“."],
-  ["DE_SEIN_KONGRUENZ", /(?<!\p{L})(ich|du|er|es|wir)[ \t]+(?:(?:jetzt|bereits|hier|dort|heute|noch|schon|auch|eben|gerade)[ \t]+){0,2}(bin|bist|ist|seid|sind)(?!\p{L})/dgiu,
+  ["DE_SEIN_KONGRUENZ", /(?<!\p{L})(ich|du|er|wir)[ \t]+(?:(?:jetzt|bereits|hier|dort|heute|noch|schon|auch|eben|gerade)[ \t]+){0,2}(bin|bist|ist|seid|sind)(?!\p{L})/dgiu,
     (_word, match) => seinBySubject[match[1].toLowerCase()], "grammar", "Die Form von „sein“ richtet sich nach dem Subjekt.", 2],
   ["DE_HABEN_PARTIZIP", /(?<!\p{L})(?:[Ii]ch|[Dd]u|[Ee]r|[Ss]ie|[Ww]ir|[Ii]hr)[ \t]+(?:habe|hast|hat|haben|habt)[ \t]+(vergisst|sieht|findet|schreibt)(?!\p{L})/dgu,
     word => participles[word], "grammar", "Für das Perfekt steht nach „haben“ das Partizip."],
