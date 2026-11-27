@@ -10,27 +10,18 @@
 </head>
 <body class="popup">
   <main>
-    <header class="brand">
-      <img src="../icons/icon48.png" alt="">
-      <div><h1>Local Grammar Pro</h1><p class="offline">Prüft offline</p></div>
-    </header>
+    <header><div class="brand"><img src="../icons/brand.svg" alt=""><span>Local Grammar <b>Pro</b></span></div></header>
+    <div class="master"><label class="row"><span>Schreibprüfung<small>Prüft offline auf deinem Gerät.</small></span><input type="checkbox" role="switch" id="enabled" disabled></label></div>
     <div class="card">
-      <label class="row"><span>Prüfung aktiv</span><input type="checkbox" id="enabled" disabled></label>
-      <label class="row">
-        <span>Sprache</span>
-        <select id="language" disabled>
+      <label class="row"><span>Prüfsprache</span><select id="language" disabled>
           <option value="de">Deutsch (DE)</option>
           <option value="en">Englisch (US)</option>
           <option value="en-GB">Englisch (UK)</option>
           <option value="auto">Automatisch</option>
-        </select>
-      </label>
-      <label class="row">
-        <span id="site-label">Auf dieser Website prüfen</span>
-        <input type="checkbox" id="site" disabled>
-      </label>
+        </select></label>
+      <label class="row"><span>Auf dieser Website<small id="site-label">Keine Website geöffnet</small></span><input type="checkbox" role="switch" id="site" disabled></label>
     </div>
-    <button type="button" class="full" id="options">Einstellungen</button>
+    <button class="settings-link" id="options"><svg class="icon" aria-hidden="true"><use href="symbols.svg#sliders"></use></svg> Einstellungen <svg class="icon" aria-hidden="true"><use href="symbols.svg#arrow"></use></svg></button>
     <p class="status" id="status" role="status"></p>
   </main>
 </body>

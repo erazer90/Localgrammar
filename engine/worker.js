@@ -4,12 +4,12 @@ import { fallbackCheck } from "./fallback.js";
 let useFallbackUntil = 0;
 let queue = Promise.resolve();
 
-self.addEventListener("message", ({ data: { id, text, preference, hint, dictionary, ignoredRules } }) => {
+self.addEventListener("message", ({ data: { id, text, preference, hint, dictionary, ignoredRules, styleHints } }) => {
   // The same WASM instance and engine cache are shared across queued checks.
   queue = queue.then(async () => {
     if (Date.now() >= useFallbackUntil) {
       try {
-        const result = await checkWithWasm(text, preference, hint, dictionary, ignoredRules);
+        const result = await checkWithWasm(text, preference, hint, dictionary, ignoredRules, styleHints);
         self.postMessage({ id, result });
         return;
       } catch (error) {
@@ -17,6 +17,6 @@ self.addEventListener("message", ({ data: { id, text, preference, hint, dictiona
         useFallbackUntil = Date.now() + 30_000;
       }
     }
-    self.postMessage({ id, result: fallbackCheck(text, preference, hint, ignoredRules) });
+    self.postMessage({ id, result: fallbackCheck(text, preference, hint, ignoredRules, dictionary, styleHints) });
   }).catch(() => self.postMessage({ id }));
 });

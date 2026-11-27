@@ -47,3 +47,21 @@ test("bundled WASM checks English agreement and the British spelling variant", a
   assert.equal(british.issues.some(item => item.original === "colour"), false);
   assert.deepEqual(requestedFiles, new Set(allowedFiles.keys()));
 });
+
+test("German proofreading ranks contextual corrections and respects style, dictionary and ignore settings", async () => {
+  const text = "🙂 Es ist vorallem fürcherlich. Ich suche den Spigel, kann IIhn nicht finden. Wie gehts dir?";
+  const check = (words = [], ignored = [], style = true) => checkWithWasm(text, "de", "", words, ignored, style);
+  const result = await check();
+  for (const [original, fix] of Object.entries({
+    vorallem: "vor allem", fürcherlich: "fürchterlich", Spigel: "Spiegel", IIhn: "ihn", gehts: "geht’s"
+  })) {
+    const matches = result.issues.filter(issue => issue.original === original);
+    assert.equal(matches.length, 1, original);
+    assert.equal(matches[0].suggestions[0], fix);
+    assert.equal(matches[0].start, text.indexOf(original));
+    assert.equal(text.slice(matches[0].start, matches[0].end), original);
+  }
+  const filtered = await check(["Spigel"], ["DE_SCHREIBWEISE"], false);
+  assert.ok(filtered.issues.some(issue => issue.original === "IIhn"));
+  assert.ok(!filtered.issues.some(issue => ["vorallem", "fürcherlich", "Spigel", "gehts"].includes(issue.original)));
+});

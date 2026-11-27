@@ -16,13 +16,15 @@ Für die Entwicklung kannst du dieses Repository klonen und direkt den Ordner mi
 2. `chrome://extensions` aufrufen und **Entwicklermodus** aktivieren.
 3. **Entpackte Erweiterung laden** und den Ordner `LocalGrammarPro` mit der `manifest.json` auswählen.
 4. Bereits offene Webseiten neu laden. Zum Ausprobieren in ein mehrzeiliges Web-Textfeld schreiben: „Ich habe gestern ein Film gesehen. Die Gramatik ist schwierig.“
-5. Eine Unterstreichung anklicken und einen Vorschlag auswählen. Mit **Alt + Umschalt + G** lässt sich der sichtbare Hinweis in der Nähe des Cursors öffnen. **Esc** schließt die Karte.
+5. Ein markiertes Wort anklicken und einen Vorschlag auswählen. Mit **Alt + Umschalt + G** lässt sich der sichtbare Hinweis in der Nähe des Cursors öffnen. **Esc** schließt die Karte.
 
 Bei einem Update der bisherigen entpackten Installation den Inhalt ihres bestehenden Installationsordners durch die neue Version ersetzen und die Erweiterung über `chrome://extensions` neu laden. So kann Chrome die bisherige Erweiterungs-ID und deren Einstellungen weiterverwenden. Eine entpackte Kopie in einem anderen Ordner erhält in der Regel eine eigene ID.
 
 ## Was sich geändert hat
 
 - Die alte Version prüfte mit wenigen regulären Ausdrücken, markierte das ganze Feld und zeigte beim Klick stets den ersten Treffer. LingoTweaker ist jetzt die Haupt-Engine. Die kontextsensitiver gefassten Regex-Regeln mit ihren bisherigen IDs stehen als lokale Basisprüfung bereit.
+- Die deutsche Prüfung ergänzt häufige Schreibweisen und feste Wendungen. Beispielsweise schlägt sie für „Es ist vorallem fürcherlich“ die Fassung „Es ist vor allem fürchterlich“ vor. In der Korrekturkarte kannst du einzelne Vorschläge oder eine angezeigte Gruppe in einem Schritt übernehmen. Gruppen bleiben innerhalb eines Satzes und einer Formatierung.
+- Unter **Einstellungen → Schreibprüfung** kannst du Stilhinweise und gebündelte Vorschläge einzeln schalten. Die Bereiche **Wörterbuch**, **Ignorierte Regeln** und **Website-Pausen** verwalten deine Ausnahmen.
 - Unterstreichungen folgen der konkreten Textstelle in `textarea`, Text- und Suchfeldern sowie zugänglichen `contenteditable`-Editoren. Umbruch, Scrollen und nachgeladene Felder werden berücksichtigt. Korrekturen verwenden Chromes Eingabefunktionen, sodass benachbarte Formatierung und Rückgängig-Verlauf erhalten bleiben können.
 - Die Korrekturkarte zeigt mehrere Vorschläge und bietet **Einmal ignorieren**, **Regel ignorieren** und bei Rechtschreibtreffern **Zum Wörterbuch**. Das Wörterbuch blendet passende Rechtschreibtreffer des WASM-Checkers aus. Grammatikregeln bleiben für diese Wörter aktiv.
 - Im Erweiterungspopup kannst du die Sprache und die Prüfung pro Hostnamen einstellen. Die Optionsseite verwaltet Wörterbuch, ignorierte Regeln und pausierte Hosts. Hell und Dunkel folgen dem System. Das Kontextmenü **Local Grammar Pro: Auswahl prüfen** öffnet einen lokalen Bericht für den markierten Text.
