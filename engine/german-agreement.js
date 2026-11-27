@@ -155,8 +155,11 @@ function prepositionalIssues(text, lexicon, add) {
     for (let i = head + 1; i <= tail; i++) {
       suggestion += following[0].slice(ranges[i - 1][1], ranges[i][0]) + replacement[i];
     }
-    add("DE_PRAEPOSITION_KASUS", end + ranges[head][0], end + ranges[tail][1], suggestion,
-      `Nach „${prep}“ steht hier der ${targetCase === "DAT" ? "Dativ" : "Akkusativ"}.`);
+    const changesCapitalization = head === originalWords.length - 1 && head === tail && capitalize(noun) === nounWord;
+    const message = changesCapitalization ? "Das Nomen wird großgeschrieben."
+      : `Nach „${prep}“ steht hier der ${targetCase === "DAT" ? "Dativ" : "Akkusativ"}.`;
+    add(changesCapitalization ? "DE_ORT_NOMEN" : "DE_PRAEPOSITION_KASUS", end + ranges[head][0],
+      end + ranges[tail][1], suggestion, message);
   }
 }
 

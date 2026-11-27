@@ -198,6 +198,10 @@ test("German word forms use the noun and verb paradigms in the offline dictionar
   for (const { example, start, end, original, suggestion } of expected) {
     assert.ok(result.issues.some(issue => issue.start === start && issue.end === end
       && issue.original === original && issue.suggestions[0] === suggestion), example);
+    if (["ihre Kinder", "unser neuer", "einem", "meinem"].includes(original)) {
+      const overlaps = result.issues.filter(issue => issue.start < end && issue.end > start);
+      assert.equal(overlaps.length, 1, example);
+    }
   }
 });
 

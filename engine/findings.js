@@ -4,6 +4,11 @@ import { germanAgreement } from "./german-agreement.js";
 import { germanCorrections } from "./german.js";
 import { germanPunctuation } from "./punctuation.js";
 
+const broaderRules = new Map([
+  ["PRAEP_DAT", "DE_PRAEPOSITION_KASUS"], ["PRAEP_AKK", "DE_PRAEPOSITION_KASUS"],
+  ["SUBJECT_VERB_AGREEMENT", "DE_SUBJEKT_VERB"]
+]);
+
 // Multiple rules may suggest the same edit with different surrounding context.
 function editKey(issue, replacement) {
   const original = issue.original;
@@ -41,8 +46,9 @@ export function finishIssues(text, language, base, ignored, dictionary, styleHin
       const preferred = byEdit.get(editKey(issue, value));
       return preferred && (preferred.start !== issue.start || preferred.end !== issue.end);
     })) continue;
-    if (issue.id === "SUBJECT_VERB_AGREEMENT" && !issue.suggestions.length
-        && local.some(item => item.id === "DE_SUBJEKT_VERB" && item.start >= issue.start && item.end <= issue.end)) continue;
+    const specificRule = broaderRules.get(issue.id);
+    if (specificRule && extra.some(item => item.id === specificRule
+        && item.start < issue.end && issue.start < item.end)) continue;
     if (language === "de" && issue.id === "IM_IHM_SPELLING_RULE"
         && extra.some(item => item.id === "DE_ORT_NOMEN"
           && /^[ \t]+$/u.test(text.slice(issue.end, item.start)))) continue;
