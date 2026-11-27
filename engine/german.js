@@ -5,10 +5,15 @@ const spelling = new Map(Object.entries({
   desweiteren: "des Weiteren", nocheinmal: "noch einmal", zumbeispiel: "zum Beispiel",
   fürcherlich: "fürchterlich", fürchterllich: "fürchterlich", nähmlich: "nämlich",
   warscheinlich: "wahrscheinlich", eigendlich: "eigentlich", entgültig: "endgültig",
-  vorraussetzung: "Voraussetzung", vorraussetzungen: "Voraussetzungen"
+  vorraussetzung: "Voraussetzung", vorraussetzungen: "Voraussetzungen",
+  ruckmeldung: "Rückmeldung", ruckmeldungen: "Rückmeldungen",
+  bessa: "besser", standartmäßig: "standardmäßig", rhytmus: "Rhythmus", reperatur: "Reparatur"
 }));
 const letter = "[\\p{L}\\p{M}\\p{N}_-]";
 const misspellings = new RegExp(`(?<!${letter})(${[...spelling.keys()].join("|")})(?!${letter})`, "dgiu");
+
+const seinBySubject = { ich: "bin", du: "bist", er: "ist", es: "ist", wir: "sind" };
+const participles = { vergisst: "vergessen", sieht: "gesehen", findet: "gefunden", schreibt: "geschrieben" };
 
 const rules = [
   ["DE_ORT_NOMEN", /(?<!\p{L})(?:[Ii]m|[Aa]m|[Zz]um|[Vv]om|[Bb]eim|[Ii]n dem|[Aa]n dem|[Ii]n den|[Dd]urch den|[Ii]n einem)[ \t]+(park|garten|wald|büro|kino|haus|bahnhof|see|restaurant|museum|hotel|supermarkt|schwimmbad|krankenhaus|zug|bus|auto|zimmer|urlaub)(?![\p{L}-])/dgu,
@@ -23,8 +28,10 @@ const rules = [
     () => "Spiegel", "spelling", "Meinst du den Spiegel?"],
   ["DE_PRONOMEN_IHN", /(?<!\p{L})(?:kann|konnte|habe|hat|sehe|sieht|finde|suche)[ \t]+(IIhn)(?![\p{L}-])/dgu,
     () => "ihn", "grammar", "Das Pronomen lautet hier „ihn“."],
-  ["DE_KOMMA_DASS", /(?<!\p{L})(?:[Ii]ch|[Ee]r|[Ss]ie)[ \t]+(?:hoffe|hofft|glaube|glaubt|weiß|denke|denkt|merke|merkt|sehe|sieht)([ \t]+dass)(?!\p{L})/dgu,
-    () => ", dass", "grammar", "Vor dem Nebensatz mit „dass“ steht ein Komma."],
+  ["DE_SEIN_KONGRUENZ", /(?<!\p{L})(ich|du|er|es|wir)[ \t]+(?:(?:jetzt|bereits|hier|dort|heute|noch|schon|auch|eben|gerade)[ \t]+){0,2}(bin|bist|ist|seid|sind)(?!\p{L})/dgiu,
+    (_word, match) => seinBySubject[match[1].toLowerCase()], "grammar", "Die Form von „sein“ richtet sich nach dem Subjekt.", 2],
+  ["DE_HABEN_PARTIZIP", /(?<!\p{L})(?:[Ii]ch|[Dd]u|[Ee]r|[Ss]ie|[Ww]ir|[Ii]hr)[ \t]+(?:habe|hast|hat|haben|habt)[ \t]+(vergisst|sieht|findet|schreibt)(?!\p{L})/dgu,
+    word => participles[word], "grammar", "Für das Perfekt steht nach „haben“ das Partizip."],
   ["DE_DERSELBE", /(?<![\p{L}-])(der selbe|die selbe|das selbe|den selben|dem selben|des selben)(?![\p{L}-])/dgiu,
     words => words[0] + words.slice(1).toLowerCase().replace(" ", ""), "grammar", "Die Formen von „derselbe“ werden zusammengeschrieben."],
   ["DE_GRUSSFORMEL", /(?<!\p{L})(?:[Mm]it[ \t]+freundlichen[ \t]+(grüßen)|[Vv]ielen[ \t]+(dank)(?=[ \t]+für\b|[.!]))(?![\p{L}-])/dgu,
@@ -39,11 +46,11 @@ const rules = [
 
 export function germanCorrections(text) {
   const issues = [];
-  for (const [id, pattern, fix, kind, message] of rules) {
+  for (const [id, pattern, fix, kind, message, group] of rules) {
     for (const match of text.matchAll(pattern)) {
-      const [start, end] = match.indices.slice(1).find(Boolean);
+      const [start, end] = group ? match.indices[group] : match.indices.slice(1).find(Boolean);
       const original = text.slice(start, end);
-      let replacement = fix(original);
+      let replacement = fix(original, match);
       if (id === "DE_SCHREIBWEISE" && (/^\p{Lu}/u.test(original)
           || /(?:^|[.!?])[\s„“»«]*$/u.test(text.slice(0, start)))) {
         replacement = replacement[0].toUpperCase() + replacement.slice(1);

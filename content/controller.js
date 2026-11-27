@@ -6,7 +6,7 @@
   let settings;
   let state;
   let timer;
-  let animation;
+  let animation = null;
   let press;
   let checking = false;
   let queued = false;
@@ -87,17 +87,18 @@
     }
   }
 
+  function draw() {
+    animation = null;
+    if (!enabled() || !state?.editor.isConnected || !state.view) {
+      marks.clear();
+      return;
+    }
+    const { editor, view, issues, ignored } = state;
+    marks.render(editor, view, issues.filter(issue => !ignored.has(issueKey(issue))));
+  }
+
   function render() {
-    if (animation) return;
-    animation = requestAnimationFrame(() => {
-      animation = null;
-      if (!enabled() || !state?.editor.isConnected || !state.view) {
-        marks.clear();
-        return;
-      }
-      const { editor, view, issues, ignored } = state;
-      marks.render(editor, view, issues.filter(issue => !ignored.has(issueKey(issue))));
-    });
+    animation ??= requestAnimationFrame(draw);
   }
 
   function show(issue, anchor, alternatives) {
@@ -230,18 +231,24 @@
   document.addEventListener("click", event => {
     const start = press;
     press = null;
-    if (!start || !state?.view || start.editor !== state.editor || event.button !== 0 || event.detail !== 1
+    if (!start || !state?.view || start.editor !== state.editor || event.button !== 0 || event.detail < 1
         || event.shiftKey || event.ctrlKey || event.altKey || event.metaKey
         || editorApi.editorFor(event) !== state.editor) return;
+    if (animation !== null) {
+      cancelAnimationFrame(animation);
+      draw();
+    }
     const hits = marks.hits.filter(({ box }) => event.clientX >= box.left && event.clientX <= box.right
-      && event.clientY >= box.top && event.clientY <= box.bottom);
+      && event.clientY >= box.top && event.clientY <= box.bottom)
+      .sort((a, b) => Number(b.issue.start === b.issue.end) - Number(a.issue.start === a.issue.end));
     if (!hits.length) return;
     const current = state;
     const revision = current.revision;
     // Chromium can restore textarea focus as the default action of this click.
     // Open afterwards so the card keeps keyboard focus, including after undo.
     setTimeout(() => {
-      if (state === current && current.revision === revision && editorApi.focused() === current.editor) {
+      if (state === current && current.revision === revision
+          && (editorApi.focused() === current.editor || document.activeElement === marks.host)) {
         show(hits[0].issue, hits[0].box, [...new Set(hits.map(hit => hit.issue))]);
       }
     }, 0);

@@ -76,3 +76,91 @@ test("location nouns are corrected without changing the preposition im", async (
   const correct = await checkWithWasm("Ich sitze im Park. Ich helfe ihm. Ich park hier.", "de", "", [], []);
   assert.ok(!correct.issues.some(issue => issue.id === "DE_ORT_NOMEN"));
 });
+
+test("German spelling and compulsory punctuation find the right edit on a mixed corpus", async () => {
+  // A vertical bar indicates an insertion and angle brackets mark a misspelling.
+  const examples = [
+    ["Wir bleiben zu Hause| weil es draußen regnet.", ","],
+    ["Sie fragte| ob wir morgen Zeit hätten.", ","],
+    ["Er sah| wie der Zug abfuhr.", ","],
+    ["Er wusste| wann der Zug abfuhr.", ","],
+    ["Ich weiß nicht| ob und wann er kommt.", ","],
+    ["Ich schreibe dir| damit du Bescheid weißt.", ","],
+    ["Wir gehen spazieren| obwohl es regnet.", ","],
+    ["Ich gehe in den Laden| bevor er schließt.", ","],
+    ["Wir essen| nachdem die Gäste angekommen sind.", ","],
+    ["Wir warten| bis der Bus kommt.", ","],
+    ["Ich bleibe hier| solange du mich brauchst.", ","],
+    ["Wenn du Zeit hast| melde dich bitte.", ","],
+    ["Weil es regnet| bleiben wir zu Hause.", ","],
+    ["Das Buch, das ich gekauft habe| ist spannend.", ","],
+    ["Sie läuft los| um den Bus zu erwischen.", ","],
+    ["Er ging| ohne zu zahlen.", ","],
+    ["Sie ging fort| ohne ein Wort zu sagen.", ","],
+    ["Wir gehen um 9 Uhr ins Büro| um pünktlich zu starten.", ","],
+    ["Wir hoffen| den Zug noch zu erreichen.", ","],
+    ["Du kannst versuchen| ihn morgen anzurufen.", ","],
+    ["Er hat Angst| den Anschluss zu verpassen.", ","],
+    ["Wir wollten kommen| aber der Zug fiel aus.", ","],
+    ["Hallo Anna| wie geht es dir?", ","],
+    ["Hallo,|Welt!", " "],
+    ["Das<,,> finde ich gut.", ","],
+    ["Wir begrüßen die Gäste <herzich>.", "herzlich"],
+    ["Wir gehen <einkauffen>.", "einkaufen"],
+    ["Das ist <bessa> für alle.", "besser"],
+    ["Das Gerät <funktinoiert> gut.", "funktioniert"],
+    ["Wir haben die <Addresse> überprüft.", "Adresse"],
+    ["Meine <Ruckmeldung> kommt morgen.", "Rückmeldung"],
+    ["Die <Entwiklung> braucht Zeit.", "Entwicklung"],
+    ["Wir müssen die Datei <seperate> speichern.", "separate"],
+    ["Die Maschine war <paralell> in Betrieb.", "parallel"],
+    ["Es gab ein <Missverständniss>.", "Missverständnis"],
+    ["Der <Kalendar> ist voll.", "Kalender"],
+    ["Die <Komunikation> klappt.", "Kommunikation"],
+    ["Die <Rechtschrebung> ist wichtig.", "Rechtschreibung"],
+    ["Ein äußerst guter <Rückblikk>.", "Rückblick"],
+    ["Ich weiß nicht, seit wann du hier <seid>.", "bist"],
+    ["Er hat <vergisst>, den Brief zu schicken.", "vergessen"]
+  ];
+  let text = "";
+  const expected = examples.map(([example, suggestion]) => {
+    const original = example.match(/<([^>]+)>/u)?.[1] ?? "";
+    const start = text.length + example.search(/[|<]/u);
+    text += example.replace(/[|<>]/gu, "") + "\n";
+    return { example, start, end: start + original.length, original, suggestion };
+  });
+  const { issues } = await checkWithWasm(text, "de", "", [], [], false);
+  for (const { example, suggestion, start, end, original } of expected) {
+    const issue = issues.find(item => item.start === start && item.end === end && item.suggestions[0] === suggestion);
+    assert.ok(issue, example);
+    assert.equal(issue.original, original);
+  }
+});
+
+test("correct German punctuation and equivalent Unicode spellings are left alone", async () => {
+  const text = [
+    "Wir bleiben zu Hause, weil es draußen regnet.",
+    "Ich bleibe damit flexibel.",
+    "Wir warten bis morgen.",
+    "Während des Urlaubs lesen wir.",
+    "Ich lese während der Ferien.",
+    "Ich lese während der Ferien im Garten.",
+    "Wir gehen um 9 Uhr ins Büro, um zu arbeiten.",
+    "Er hörte wie ein Profi.",
+    "Ich esse Äpfel, Birnen und Bananen.",
+    "Ich weiß nicht, ob und wann er kommt.",
+    "Ich gehe, weil ich müde bin und weil es regnet.",
+    "Das Buch, das ich gekauft habe, ist spannend.",
+    "Sie versucht zu schlafen.",
+    "Er braucht nicht zu kommen.",
+    "Das Ergebnis sieht so aus wie erwartet.",
+    "Das ist ein kleiner grüner Apfel.",
+    "Der Preis liegt bei 1,50 Euro.",
+    "Ich frage mich, wie lange du schon hier bist.",
+    "Sie hat vergessen, uns anzurufen.",
+    "Ein Text mit äußerst schönen Wörtern.",
+    "Der Datenschutzbeauftragte prüft E-Mail-Adressen."
+  ].join("\n");
+  const { issues } = await checkWithWasm(text, "de", "", [], [], false);
+  assert.deepEqual(issues, []);
+});

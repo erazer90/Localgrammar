@@ -7,16 +7,19 @@ const menu = "check-selection";
 let creatingDocument;
 let settingsQueue = Promise.resolve();
 
-async function ensureOffscreen() {
-  const contexts = await chrome.runtime.getContexts({
-    contextTypes: ["OFFSCREEN_DOCUMENT"], documentUrls: [chrome.runtime.getURL(offscreen)]
-  });
-  if (contexts.length) return;
-  creatingDocument ??= chrome.offscreen.createDocument({
-    url: offscreen, reasons: ["WORKERS"],
-    justification: "Run the offline proofreading engine in a shared Web Worker."
-  }).finally(() => { creatingDocument = undefined; });
-  await creatingDocument;
+function ensureOffscreen() {
+  creatingDocument ??= (async () => {
+    const contexts = await chrome.runtime.getContexts({
+      contextTypes: ["OFFSCREEN_DOCUMENT"], documentUrls: [chrome.runtime.getURL(offscreen)]
+    });
+    if (!contexts.length) {
+      await chrome.offscreen.createDocument({
+        url: offscreen, reasons: ["WORKERS"],
+        justification: "Run the offline proofreading engine in a shared Web Worker."
+      });
+    }
+  })().finally(() => { creatingDocument = undefined; });
+  return creatingDocument;
 }
 
 async function check(text, hint, settings) {

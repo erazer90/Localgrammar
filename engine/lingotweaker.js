@@ -1,4 +1,6 @@
 import { finishIssues } from "./findings.js";
+import { rankSpelling } from "./spelling.js";
+import { normalizeText } from "./text.js";
 import { limitText } from "./limits.js";
 import { fallbackLanguage } from "./fallback.js";
 import init, { detect_json, LtEngine } from "./vendor/lt_wasm.js";
@@ -81,8 +83,9 @@ function selectLanguage(text, preference, hint) {
 }
 
 export async function checkWithWasm(value, preference, hint, dictionary, ignoredRules, styleHints = true) {
-  const text = limitText(value);
-  const result = { engine: "wasm", language: null, truncated: text.length < value.length, issues: [] };
+  const source = limitText(value);
+  const { text, restore } = normalizeText(source);
+  const result = { engine: "wasm", language: null, truncated: source.length < value.length, issues: [] };
   if (!text.trim()) return result;
   await initWasm();
   const language = selectLanguage(text, preference, hint);
@@ -105,13 +108,14 @@ export async function checkWithWasm(value, preference, hint, dictionary, ignored
     const spelling = match_type === "UnknownWord";
     const kind = spelling ? "spelling" : id !== "UPPERCASE_SENTENCE_START" && /style|typograph/i.test(issue_type) ? "style" : "grammar";
     const suggestions = [...new Set(match.suggestions.map(fix => fix.value))]
-      .filter(fix => fix !== original).slice(0, 8);
+      .filter(fix => fix !== original);
     const message = match.message.replace(/<\/?(?:suggestion|old|new|em|i|b|strong)>/giu, "");
     const key = JSON.stringify([id, start, end, message, suggestions]);
     if (unique.has(key)) continue;
     unique.add(key);
-    result.issues.push({ id, start, end, original, message, kind, suggestions });
+    result.issues.push({ id, start, end, original, message, kind,
+      suggestions: (spelling && language === "de" ? rankSpelling(original, suggestions) : suggestions).slice(0, 8) });
   }
-  result.issues = finishIssues(text, language, result.issues, ignored, dictionary, styleHints);
+  result.issues = restore(finishIssues(text, language, result.issues, ignored, dictionary, styleHints));
   return result;
 }

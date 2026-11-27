@@ -1,5 +1,13 @@
 # Changelog
 
+## 4.1.2
+
+- Zusätzliche Pflichtkommas bei Nebensätzen, Infinitivgruppen und Anreden. Fehlende Zeichen lassen sich direkt einfügen.
+- Zusätzliche Grammatikhinweise für häufige falsche Formen von „sein“ und beim Perfekt mit „haben“.
+- Deutsche Rechtschreibvorschläge nach Schreibähnlichkeit sortiert. Unicode-Varianten wie zusammengesetzte Umlaute werden beim Prüfen gleich behandelt.
+- Anklickbare Korrekturen in modalen Dialogen. Beim Klick werden anstehende Positionsänderungen berücksichtigt.
+- Wartende Prüfaufträge können eine laufende Prüfung nicht vorzeitig abbrechen.
+
 ## 4.1.1
 
 - Korrekte Großschreibung in Ortsangaben wie „im park“, ohne falschen Vorschlag für „im“.

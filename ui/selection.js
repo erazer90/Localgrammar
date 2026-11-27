@@ -48,7 +48,7 @@ async function showReport() {
     if (issue.suggestions.length) {
       const fixes = document.createElement("p");
       fixes.className = "fixes";
-      fixes.textContent = issue.suggestions.map(value => value || "Entfernen").join(" · ");
+      fixes.textContent = issue.suggestions.map(value => value === " " ? "Leerzeichen einfügen" : value || "Entfernen").join(" · ");
       item.append(fixes);
     }
     results.append(item);
