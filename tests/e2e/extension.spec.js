@@ -102,7 +102,7 @@ test("the extension corrects textarea text and preserves formatting and undo in 
       const range = document.createRange();
       range.selectNodeContents(element);
       const box = range.getBoundingClientRect();
-      return { x: (box.left + box.right) / 2, y: box.bottom - 3 };
+      return { x: (box.left + box.right) / 2, y: box.top + box.height / 3 };
     });
     await page.mouse.click(x, y);
     await applyFirstSuggestion(page);
@@ -179,5 +179,62 @@ test("private fields and excluded editor fragments never enter grammar requests"
       delete globalThis.privacyProbe;
     });
     await page.close();
+  }
+});
+
+test("clicking adjacent words offers one undoable edit and respects grouping settings", async () => {
+  const page = await context.newPage();
+  const options = await context.newPage();
+  try {
+    await options.goto(`${extension}/ui/options.html`);
+    await page.goto(origin);
+    const editor = page.locator("#plain");
+    const text = "Es ist vorallem fürcherlich. Danke!";
+    await editor.fill(text);
+    await expect(page.locator("local-grammar-pro")).toHaveCount(1);
+    const point = await editor.evaluate(node => {
+      const style = getComputedStyle(node);
+      const canvas = document.createElement("canvas").getContext("2d");
+      canvas.font = style.font;
+      const bounds = node.getBoundingClientRect();
+      return { x: bounds.x + node.clientLeft + parseFloat(style.paddingLeft) + canvas.measureText("Es ist vor").width,
+        y: bounds.y + node.clientTop + parseFloat(style.paddingTop) + parseFloat(style.fontSize) / 2 };
+    });
+    await page.mouse.move(point.x, point.y);
+    await page.mouse.down();
+    await page.mouse.move(point.x + 55, point.y, { steps: 5 });
+    await page.mouse.up();
+    await expect(editor).toBeFocused();
+    expect(await editor.evaluate(node => node.selectionEnd - node.selectionStart)).toBeGreaterThan(0);
+    await page.mouse.click(point.x, point.y);
+    // Chromium exposes the closed extension shadow tree to the accessibility API.
+    const session = await context.newCDPSession(page);
+    const buttons = async () => (await session.send("Accessibility.getFullAXTree")).nodes
+      .filter(node => node.role?.value === "button");
+    const groupName = "vor allem fürchterlich";
+    await expect.poll(async () => (await buttons()).map(node => node.name?.value)).toContain(groupName);
+    const grouped = (await buttons()).find(node => node.name?.value === groupName);
+    await session.send("DOM.focus", { backendNodeId: grouped.backendDOMNodeId });
+    await page.keyboard.press("Enter");
+    await expect(editor).toHaveValue("Es ist vor allem fürchterlich. Danke!");
+    await page.keyboard.press("Control+z");
+    await expect(editor).toHaveValue(text);
+
+    await options.getByRole("switch", { name: /Vorschläge bündeln/u }).uncheck();
+    await expect(options.getByRole("status")).toHaveText("Gespeichert.");
+    await options.reload();
+    await expect(options.locator("#groupSuggestions")).toBeEnabled();
+    await expect(options.locator("#groupSuggestions")).not.toBeChecked();
+    await page.bringToFront();
+    await editor.focus();
+    await expect(page.locator("local-grammar-pro")).toHaveCount(1);
+    await page.mouse.click(point.x, point.y);
+    await expect.poll(async () => (await buttons()).map(node => node.name?.value)).toContain("vor allem");
+    expect((await buttons()).some(node => node.name?.value === groupName)).toBe(false);
+    await session.detach();
+  } finally {
+    await options.locator("#groupSuggestions").check();
+    await page.close();
+    await options.close();
   }
 });

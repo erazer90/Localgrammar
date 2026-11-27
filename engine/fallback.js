@@ -1,4 +1,5 @@
-import { MAX_ISSUES, limitText } from "./limits.js";
+import { finishIssues } from "./findings.js";
+import { limitText } from "./limits.js";
 
 // Keep the original rule IDs for stored ignore settings. Ambiguous words
 // from the original checker now require an explicit contextual pattern.
@@ -37,7 +38,7 @@ export function fallbackLanguage(text, preference, hint) {
   return /^en-GB\b/i.test(hint) ? "en-GB" : /^en\b/i.test(hint) ? "en" : "de";
 }
 
-export function fallbackCheck(value, preference, hint, ignoredRules) {
+export function fallbackCheck(value, preference, hint, ignoredRules, dictionary = [], styleHints = true) {
   const text = limitText(value);
   const language = fallbackLanguage(text, preference, hint);
   const ignored = new Set(ignoredRules);
@@ -53,6 +54,5 @@ export function fallbackCheck(value, preference, hint, ignoredRules) {
       issues.push({ id, start, end, original, message, kind: style ? "style" : "grammar", suggestions });
     }
   }
-  issues.sort((a, b) => a.start - b.start || a.end - b.end);
-  return { engine: "fallback", language, truncated: text.length < value.length, issues: issues.slice(0, MAX_ISSUES) };
+  return { engine: "fallback", language, truncated: text.length < value.length, issues: finishIssues(text, language, issues, ignored, dictionary, styleHints) };
 }

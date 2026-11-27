@@ -4,9 +4,9 @@
     :host { all: initial !important; position: fixed !important; inset: 0 !important;
       z-index: 2147483647 !important; pointer-events: none !important; display: block !important;
       color-scheme: light dark !important; }
-    .line { all: unset; box-sizing: border-box; position: fixed; cursor: pointer; pointer-events: auto;
+    .line { all: unset; box-sizing: border-box; position: fixed; pointer-events: none;
       border-bottom: 2px solid var(--mark); border-radius: 2px; }
-    .line:hover, .line[data-current] { background: color-mix(in srgb, var(--mark) 25%, transparent); }
+    .line[data-current] { background: color-mix(in srgb, var(--mark) 25%, transparent); }
     .spelling { --mark: #e34b5d; } .grammar { --mark: #477bdf; } .style { --mark: #9b66d6; }
     @media (prefers-color-scheme: dark) {
       .spelling { --mark: #ff7285; } .grammar { --mark: #7ba6ff; } .style { --mark: #c291ff; }
@@ -17,19 +17,26 @@
       --muted: light-dark(#4b5770, #b5bfd5); --border: light-dark(#d8dfeb, #414c61);
       --fill: light-dark(#edf3ff, #283854); --accent: light-dark(#194b9d, #b1ccff);
       position: fixed; display: block; pointer-events: auto; color: var(--ink); background: var(--surface);
-      border: 1px solid var(--border); border-radius: 12px; padding: 14px;
+      border: 1px solid var(--border); border-radius: 16px; padding: 16px 18px;
       width: min(340px, calc(100vw - 16px)); overflow: auto; overscroll-behavior: contain;
       box-shadow: 0 12px 35px #131d4540; font: 14px/1.45 system-ui, sans-serif;
       text-align: start; direction: ltr; overflow-wrap: anywhere;
     }
     .heading, .suggestions, .actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
     .heading { justify-content: space-between; font-size: 12px; color: var(--muted); font-weight: 650; }
-    .message { margin: 9px 0 12px; }
+    .category { display: inline-flex; align-items: center; gap: 7px; }
+    .category::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--mark); }
+    .original { margin: 6px 0 3px; font: 600 19px/1.3 system-ui, sans-serif; white-space: pre-wrap; }
+    .message { margin: 0 0 13px; color: var(--muted); }
+    .group-label { font-size: 12px; font-weight: 600; color: var(--muted); margin: 14px 0 4px; }
+    .card .group-fix { width: 100%; text-align: start; padding: 8px 10px; background: var(--fill); }
+    .suggestions button:first-child { color: light-dark(#fff, #12203c); background: light-dark(#2759ad, #a9c7ff); }
+
     .note { margin: 8px 0; font-size: 12px; color: var(--muted); }
     .actions { margin: 11px 0 0; border-top: 1px solid var(--border); padding-top: 8px; }
     .card button {
       font: inherit; cursor: pointer; border: 1px solid transparent; border-radius: 6px;
-      padding: 4px 7px; background: transparent; color: var(--accent); min-height: 29px;
+      padding: 5px 9px; background: transparent; color: var(--accent); min-height: 29px;
       overflow-wrap: anywhere; max-width: 100%;
     }
     .card button:hover { border-color: var(--border); }
@@ -112,9 +119,6 @@
       this.mirror = element("div", "mirror");
       this.mirror.setAttribute("aria-hidden", "true");
       this.root.append(this.layer, this.mirror);
-      this.root.addEventListener("pointerdown", event => {
-        if (event.composedPath()[0].classList?.contains("line") && event.button === 0) event.preventDefault();
-      });
       this.root.addEventListener("keydown", event => {
         if (event.key === "Escape" && this.card) {
           event.stopPropagation();
@@ -164,7 +168,7 @@
       return node;
     }
 
-    render(editor, view, issues, open) {
+    render(editor, view, issues) {
       this.hits = [];
       if (!issues.length) {
         this.clear();
@@ -190,18 +194,11 @@
         for (const box of fragments(range.getClientRects(), clip)) {
           const hit = { issue, box };
           this.hits.push(hit);
-          const mark = button("", event => {
-            event.stopPropagation();
-            const overlaps = [...new Set(this.hits.filter(({ box: candidate }) =>
-              event.clientX >= candidate.left && event.clientX <= candidate.right
-              && Math.abs(candidate.bottom - box.bottom) < 5).map(item => item.issue))];
-            open(issue, box, [issue, ...overlaps.filter(item => item !== issue)]);
-          }, `line ${issue.kind}`);
-          mark.tabIndex = -1;
-          mark.setAttribute("aria-label", issue.message);
+          const mark = element("span", `line ${issue.kind}`);
+          mark.setAttribute("aria-hidden", "true");
           Object.assign(mark.style, {
-            left: `${box.left}px`, top: `${Math.max(box.top, box.bottom - 6)}px`,
-            width: `${box.width}px`, height: `${Math.min(6, box.height)}px`
+            left: `${box.left}px`, top: `${box.top}px`,
+            width: `${box.width}px`, height: `${box.height}px`
           });
           if (issue === this.current) {
             mark.dataset.current = "";
@@ -230,8 +227,10 @@
       const heading = element("div", "heading");
       const close = button("×", handlers.close);
       close.setAttribute("aria-label", "Schließen");
-      heading.append(element("span", "", categories[issue.kind]), close);
-      card.append(heading, element("p", "message", issue.message));
+      heading.append(element("span", `category ${issue.kind}`, categories[issue.kind]), close);
+      card.append(heading);
+      if (issue.original.trim()) card.append(element("p", "original", issue.original));
+      card.append(element("p", "message", issue.message));
 
       if (alternatives.length > 1) {
         const index = alternatives.indexOf(issue);
@@ -247,6 +246,11 @@
         card.append(suggestions);
       } else if (issue.suggestions.length) {
         card.append(element("p", "note", `Vorschläge zur manuellen Korrektur: ${issue.suggestions.join(" · ")}`));
+      }
+      if (handlers.group && handlers.apply) {
+        const group = handlers.group;
+        card.append(element("p", "group-label", `${group.count} Stellen zusammen korrigieren`),
+          button(group.replacement, () => handlers.apply(group.replacement, group), "group-fix"));
       }
       const actions = element("div", "actions");
       actions.append(button("Einmal ignorieren", handlers.ignore), button("Regel ignorieren", handlers.ignoreRule));

@@ -7,6 +7,7 @@
   let state;
   let timer;
   let animation;
+  let press;
   let checking = false;
   let queued = false;
 
@@ -95,7 +96,7 @@
         return;
       }
       const { editor, view, issues, ignored } = state;
-      marks.render(editor, view, issues.filter(issue => !ignored.has(issueKey(issue))), show);
+      marks.render(editor, view, issues.filter(issue => !ignored.has(issueKey(issue))));
     });
   }
 
@@ -119,6 +120,8 @@
         if (marks.current === issue) marks.status("Konnte nicht speichern.");
       }
     };
+    const group = settings.groupSuggestions ? editorApi.groupFor(current.view,
+      current.issues.filter(item => !current.ignored.has(issueKey(item))), issue) : null;
     marks.show(issue, anchor, {
       close: () => closeCard(true),
       ignore: () => {
@@ -130,9 +133,10 @@
       addWord: isWord ? () => save("personalDictionary", dictionaryWord) : null,
       fallback: current.engine === "fallback",
       next: (next, items) => show(next, anchor, items),
-      apply: editorApi.canReplace(current.view, issue) ? replacement => {
+      group,
+      apply: editorApi.canReplace(current.view, issue) ? (replacement, target = issue) => {
         if (state !== current || current.view?.text !== checkedText
-          || !editorApi.apply(current.editor, checkedText, issue, replacement)) {
+          || !editorApi.apply(current.editor, checkedText, target, replacement)) {
           marks.status("Das Feld wurde geändert oder der Editor hat die Korrektur abgelehnt.");
           if (state === current && editorApi.snapshot(current.editor).text !== checkedText) {
             setTimeout(() => {
@@ -213,7 +217,25 @@
     });
   }, true);
   document.addEventListener("pointerdown", event => {
+    press = event.button === 0 && state?.view && editorApi.editorFor(event) === state.editor
+      ? { x: event.clientX, y: event.clientY, editor: state.editor } : null;
     if (event.target !== marks.host && marks.card) closeCard();
+  }, true);
+  document.addEventListener("pointermove", event => {
+    if (press && Math.hypot(event.clientX - press.x, event.clientY - press.y) > 3) press = null;
+  }, { capture: true, passive: true });
+  document.addEventListener("pointercancel", () => { press = null; }, true);
+  // A click inside an existing selection can leave it selected (e.g. after
+  // undo). Distinguish drags by the pointer gesture, not the selection length.
+  document.addEventListener("click", event => {
+    const start = press;
+    press = null;
+    if (!start || !state?.view || start.editor !== state.editor || event.button !== 0 || event.detail !== 1
+        || event.shiftKey || event.ctrlKey || event.altKey || event.metaKey
+        || editorApi.editorFor(event) !== state.editor) return;
+    const hits = marks.hits.filter(({ box }) => event.clientX >= box.left && event.clientX <= box.right
+      && event.clientY >= box.top && event.clientY <= box.bottom);
+    if (hits.length) show(hits[0].issue, hits[0].box, [...new Set(hits.map(hit => hit.issue))]);
   }, true);
   document.addEventListener("input", event => {
     const editor = editorApi.editorFor(event);

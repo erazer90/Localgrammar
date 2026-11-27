@@ -7,6 +7,7 @@ let site = "";
 
 function render(settings) {
   enabled.checked = settings.enabled;
+  enabled.closest(".row").querySelector("small").textContent = settings.enabled ? "Prüft offline auf deinem Gerät." : "Die Prüfung ist pausiert.";
   language.value = settings.language;
   siteToggle.checked = !!site && !settings.pausedSites.includes(site);
 }
@@ -29,7 +30,7 @@ document.getElementById("options").addEventListener("click", () => chrome.runtim
 
 Promise.all([LGPSettings.read(), chrome.tabs.query({ active: true, currentWindow: true })]).then(([settings, [tab]]) => {
   site = LGPSettings.hostname(tab?.url ?? "");
-  if (site) siteLabel.textContent = `${site} prüfen`;
+  if (site) siteLabel.textContent = site;
   render(settings);
   enabled.disabled = false;
   language.disabled = false;

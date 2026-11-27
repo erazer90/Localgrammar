@@ -1,5 +1,5 @@
-import "../settings.js";
-import { MAX_ISSUES, limitText } from "./limits.js";
+import { finishIssues } from "./findings.js";
+import { limitText } from "./limits.js";
 import { fallbackLanguage } from "./fallback.js";
 import init, { detect_json, LtEngine } from "./vendor/lt_wasm.js";
 
@@ -80,7 +80,7 @@ function selectLanguage(text, preference, hint) {
   return detected ? null : fallbackLanguage(text, preference, hint);
 }
 
-export async function checkWithWasm(value, preference, hint, dictionary, ignoredRules) {
+export async function checkWithWasm(value, preference, hint, dictionary, ignoredRules, styleHints = true) {
   const text = limitText(value);
   const result = { engine: "wasm", language: null, truncated: text.length < value.length, issues: [] };
   if (!text.trim()) return result;
@@ -92,7 +92,6 @@ export async function checkWithWasm(value, preference, hint, dictionary, ignored
   const engine = await getEngine(language);
   const { matches } = JSON.parse(engine.check_matches_json(text));
   const offsets = utf16Offsets(text);
-  const accepted = new Set(dictionary.map(LGPSettings.wordKey));
   const ignored = new Set(ignoredRules.flatMap(id => [id, ...(previousRuleIds.get(id) || [])]));
   const unique = new Set();
 
@@ -104,8 +103,7 @@ export async function checkWithWasm(value, preference, hint, dictionary, ignored
     if (start === undefined || end === undefined || end < start) continue;
     const original = text.slice(start, end);
     const spelling = match_type === "UnknownWord";
-    if (spelling && accepted.has(LGPSettings.wordKey(original))) continue;
-    const kind = spelling ? "spelling" : /style|typograph/i.test(issue_type) ? "style" : "grammar";
+    const kind = spelling ? "spelling" : id !== "UPPERCASE_SENTENCE_START" && /style|typograph/i.test(issue_type) ? "style" : "grammar";
     const suggestions = [...new Set(match.suggestions.map(fix => fix.value))]
       .filter(fix => fix !== original).slice(0, 8);
     const message = match.message.replace(/<\/?(?:suggestion|old|new|em|i|b|strong)>/giu, "");
@@ -114,7 +112,6 @@ export async function checkWithWasm(value, preference, hint, dictionary, ignored
     unique.add(key);
     result.issues.push({ id, start, end, original, message, kind, suggestions });
   }
-  result.issues.sort((a, b) => a.start - b.start || a.end - b.end);
-  result.issues = result.issues.slice(0, MAX_ISSUES);
+  result.issues = finishIssues(text, language, result.issues, ignored, dictionary, styleHints);
   return result;
 }

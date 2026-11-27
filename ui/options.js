@@ -1,4 +1,4 @@
-const fields = ["enabled", "showInline", "language"];
+const fields = ["enabled", "showInline", "styleHints", "groupSuggestions", "language"];
 const lists = ["personalDictionary", "ignoredRules", "pausedSites"];
 const status = document.getElementById("status");
 const element = id => document.getElementById(id);
@@ -9,6 +9,21 @@ function notify(message, error = false) {
   status.toggleAttribute("data-error", error);
   status.textContent = message;
 }
+
+function navigate() {
+  const panels = [...document.querySelectorAll(".panel")];
+  const current = panels.find(panel => `#${panel.id}` === location.hash) ?? panels[0];
+  for (const panel of panels) panel.hidden = panel !== current;
+  for (const link of document.querySelectorAll("nav a")) {
+    if (link.hash === `#${current.id}`) link.setAttribute("aria-current", "page");
+    else link.removeAttribute("aria-current");
+  }
+  document.title = `${current.querySelector("h1").textContent} · Local Grammar Pro`;
+  notify("");
+}
+
+navigate();
+window.addEventListener("hashchange", navigate);
 
 function render(settings) {
   for (const key of fields) {

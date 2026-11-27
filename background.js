@@ -24,7 +24,7 @@ async function check(text, hint, settings) {
   const ignoredRules = settings.ignoredRules;
   if (typeof text !== "string" || !text.trim()) return { issues: [], engine: "wasm" };
   text = text.slice(0, MAX_TEXT + 2);
-  const payload = { text, preference, hint, dictionary: settings.personalDictionary, ignoredRules };
+  const payload = { text, preference, hint, dictionary: settings.personalDictionary, ignoredRules, styleHints: settings.styleHints };
   try {
     await ensureOffscreen();
     const result = await chrome.runtime.sendMessage({ action: "worker.check", payload });
@@ -32,12 +32,12 @@ async function check(text, hint, settings) {
   } catch {
     // The service worker can still run the small bounded fallback without a document.
   }
-  return fallbackCheck(text, preference, hint, ignoredRules);
+  return fallbackCheck(text, preference, hint, ignoredRules, payload.dictionary, payload.styleHints);
 }
 
 async function save({ key, value, remove }) {
   const stored = await LGPSettings.read();
-  if (["enabled", "showInline"].includes(key) && typeof value === "boolean") {
+  if (["enabled", "showInline", "styleHints", "groupSuggestions"].includes(key) && typeof value === "boolean") {
     stored[key] = value;
   } else if (key === "language" && ["de", "en", "en-GB", "auto"].includes(value)) {
     stored[key] = value;

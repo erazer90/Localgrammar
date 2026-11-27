@@ -8,59 +8,76 @@
   <script defer src="../settings.js"></script>
   <script defer src="options.js"></script>
 </head>
-<body>
-  <main>
-    <header class="brand">
-      <img src="../icons/icon48.png" alt="">
-      <div><h1>Einstellungen</h1><p class="subtle">Local Grammar Pro</p></div>
-    </header>
-    <section class="card">
-      <h2>Prüfung</h2>
-      <label class="row"><span>Prüfung aktiv</span><input type="checkbox" id="enabled" disabled></label>
-      <label class="row"><span>Inline-Markierungen anzeigen</span><input type="checkbox" id="showInline" disabled></label>
-      <label class="row">
-        <span>Prüfsprache</span>
-        <select id="language" disabled>
+<body class="options">
+  <div class="shell">
+    <aside>
+      <div class="brand"><img src="../icons/brand.svg" alt=""><span>Local Grammar <b>Pro</b></span></div>
+      <nav aria-label="Einstellungen">
+        <a href="#pruefung"><svg class="icon" aria-hidden="true"><use href="symbols.svg#sliders"></use></svg>Schreibprüfung</a>
+        <a href="#woerterbuch"><svg class="icon" aria-hidden="true"><use href="symbols.svg#book"></use></svg>Wörterbuch</a>
+        <a href="#regeln"><svg class="icon" aria-hidden="true"><use href="symbols.svg#rules"></use></svg>Ignorierte Regeln</a>
+        <a href="#websites"><svg class="icon" aria-hidden="true"><use href="symbols.svg#globe"></use></svg>Website-Pausen</a>
+      </nav>
+      <p class="privacy"><svg class="icon" aria-hidden="true"><use href="symbols.svg#shield"></use></svg> Lokale Verarbeitung</p>
+    </aside>
+    <main>
+      <p class="context">Einstellungen</p>
+      <section class="panel" id="pruefung">
+        <h1>Schreibprüfung</h1>
+        <div class="master"><label class="row"><span>Prüfung aktivieren<small>Prüft deine Texte direkt auf diesem Gerät.</small></span><input type="checkbox" role="switch" id="enabled" disabled></label></div>
+        <h2>Sprache und Hinweise</h2>
+        <div class="card">
+          <label class="row"><span>Prüfsprache</span><select id="language" disabled>
           <option value="de">Deutsch (DE)</option>
           <option value="en">Englisch (US)</option>
           <option value="en-GB">Englisch (UK)</option>
           <option value="auto">Automatisch</option>
-        </select>
-      </label>
-      <p class="help">Im Textfeld öffnet <kbd>Alt</kbd> + <kbd>Umschalt</kbd> + <kbd>G</kbd> den nächsten sichtbaren Hinweis.</p>
-    </section>
-
-    <section class="card">
-      <h2>Persönliches Wörterbuch</h2>
-      <p class="help" id="dictionary-help">Ein Wort pro Zeile. Aufgenommene Wörter werden bei der Rechtschreibprüfung akzeptiert.</p>
-      <form class="add" id="dictionary-form">
-        <textarea id="words" rows="2" aria-label="Wörter hinzufügen" aria-describedby="dictionary-help" required></textarea>
-        <button type="submit" class="primary">Hinzufügen</button>
-      </form>
-      <ul class="entries" id="personalDictionary"></ul>
-      <p class="empty" id="personalDictionary-empty">Das Wörterbuch ist leer.</p>
-    </section>
-
-    <section class="card">
-      <h2>Ignorierte Regeln</h2>
-      <p class="help">Regeln, die du in einem Korrekturhinweis deaktiviert hast.</p>
-      <ul class="entries" id="ignoredRules"></ul>
-      <p class="empty" id="ignoredRules-empty">Keine Regeln ignoriert.</p>
-    </section>
-
-    <section class="card">
-      <h2>Pausierte Websites</h2>
-      <p class="help" id="site-help">Gilt für den eingegebenen Hostnamen. Subdomains kannst du separat einstellen.</p>
-      <form class="add" id="site-form">
-        <input type="text" id="hostname" aria-label="Hostname" aria-describedby="site-help"
-          placeholder="beispiel.de" spellcheck="false" autocomplete="off" required>
-        <button type="submit" class="primary">Pausieren</button>
-      </form>
-      <ul class="entries" id="pausedSites"></ul>
-      <p class="empty" id="pausedSites-empty">Keine Websites pausiert.</p>
-    </section>
-    <p class="status" id="status" role="status"></p>
-    <p class="help">Die Prüfung läuft lokal. Wörterbuch und pausierte Hostnamen bleiben auf diesem Gerät. Pausiere die Prüfung auf vertraulichen Websites; unbeschriftete sensible Felder können nicht zuverlässig erkannt werden.</p>
-  </main>
+        </select></label>
+          <label class="row"><span>Stil und Typografie<small>Zeigt auch Hinweise zu Ausdruck und Zeichensetzung.</small></span><input type="checkbox" role="switch" id="styleHints" disabled></label>
+        </div>
+        <h2>Im Textfeld</h2>
+        <div class="card">
+          <label class="row"><span>Fundstellen markieren<small>Ein Klick auf ein markiertes Wort öffnet die Korrektur.</small></span><input type="checkbox" role="switch" id="showInline" disabled></label>
+          <label class="row"><span>Vorschläge bündeln<small>Bietet für benachbarte Fehler eine gemeinsame Korrektur an.</small></span><input type="checkbox" role="switch" id="groupSuggestions" disabled></label>
+        </div>
+        <p class="shortcut"><span>Hinweis am Cursor öffnen</span> <span><kbd>Alt</kbd> + <kbd>Umschalt</kbd> + <kbd>G</kbd></span></p>
+      </section>
+      <section class="panel" id="woerterbuch" hidden>
+        <h1>Wörterbuch</h1>
+        <p class="intro" id="dictionary-help">Ergänze Namen und Fachbegriffe, die du verwendest. Gib ein Wort pro Zeile ein.</p>
+        <div class="card collection">
+          <form class="add" id="dictionary-form">
+            <textarea id="words" rows="2" aria-label="Wörter hinzufügen" aria-describedby="dictionary-help" required></textarea>
+            <button type="submit" class="primary">Hinzufügen</button>
+          </form>
+          <ul class="entries" id="personalDictionary"></ul>
+          <p class="empty" id="personalDictionary-empty">Das Wörterbuch ist leer.</p>
+        </div>
+      </section>
+      <section class="panel" id="regeln" hidden>
+        <h1>Ignorierte Regeln</h1>
+        <p class="intro">Hier kannst du Regeln wieder aktivieren, die du in einer Korrekturkarte ignoriert hast.</p>
+        <div class="card collection">
+          <ul class="entries" id="ignoredRules"></ul>
+          <p class="empty" id="ignoredRules-empty">Du hast keine Regeln ignoriert.</p>
+        </div>
+      </section>
+      <section class="panel" id="websites" hidden>
+        <h1>Website-Pausen</h1>
+        <p class="intro" id="site-help">Pausiere die Prüfung für einzelne Websites. Jede Pause gilt für den angegebenen Hostnamen.</p>
+        <div class="card collection">
+          <form class="add" id="site-form">
+            <input type="text" id="hostname" aria-label="Hostname" aria-describedby="site-help"
+              placeholder="beispiel.de" spellcheck="false" autocomplete="off" required>
+            <button type="submit" class="primary">Pausieren</button>
+          </form>
+          <ul class="entries" id="pausedSites"></ul>
+          <p class="empty" id="pausedSites-empty">Keine Websites pausiert.</p>
+        </div>
+        <p class="help">Auf vertraulichen Websites kannst du die gesamte Prüfung pausieren. Manche sensiblen Textfelder sind für den Browser schwer zu erkennen.</p>
+      </section>
+      <p class="status" id="status" role="status"></p>
+    </main>
+  </div>
 </body>
 </html>

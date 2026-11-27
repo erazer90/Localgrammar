@@ -3,6 +3,8 @@
     enabled: true,
     language: "de",
     showInline: true,
+    styleHints: true,
+    groupSuggestions: true,
     personalDictionary: [],
     ignoredRules: [],
     pausedSites: []
@@ -37,6 +39,8 @@
     return {
       enabled: stored.enabled !== false,
       showInline: stored.showInline !== false,
+      styleHints: stored.styleHints !== false,
+      groupSuggestions: stored.groupSuggestions !== false,
       language: ["de", "en", "en-GB", "auto"].includes(language) ? language : "de",
       personalDictionary: strings(stored.personalDictionary),
       ignoredRules: strings(stored.ignoredRules),

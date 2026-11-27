@@ -128,8 +128,42 @@
 
   function canReplace(view, issue) {
     if (view.plain) return true;
+    if (issue.count && !view.segments.some(item => item.start <= issue.start && issue.end <= item.end)) return false;
     return !view.boundaries.some(index => index >= issue.start && index < issue.end)
       && !!rangeFor(view, issue.start, issue.end);
+  }
+
+  // Combine nearby, compatible edits. A group stays inside a sentence and a
+  // single formatted text node so that one native edit can be undone cleanly.
+  function groupFor(view, issues, selected) {
+    let run = [];
+    function finish() {
+      if (run.length < 2 || !run.includes(selected)) return null;
+      const start = run[0].start;
+      const end = run.at(-1).end;
+      if (!view.plain && !view.segments.some(item => item.start <= start && end <= item.end)) return null;
+      let cursor = start;
+      let replacement = "";
+      for (const item of run) {
+        replacement += view.text.slice(cursor, item.start) + item.suggestions[0];
+        cursor = item.end;
+      }
+      return { start, end, original: view.text.slice(start, end), replacement, count: run.length };
+    }
+    for (const issue of issues) {
+      const [first] = issue.suggestions;
+      const reliable = first !== undefined && (issue.suggestions.length === 1 || issue.preferred
+        || first.toLowerCase() === issue.original.toLowerCase());
+      const previous = run.at(-1);
+      if (previous && (!reliable || issue.start < previous.end || issue.end - run[0].start > 90
+          || run.length >= 6 || !/^[ \t]*(?:\p{L}{1,12}[ \t]+)?$/u.test(view.text.slice(previous.end, issue.start)))) {
+        const group = finish();
+        if (group) return group;
+        run = [];
+      }
+      if (reliable) run.push(issue);
+    }
+    return finish();
   }
 
   function apply(editor, checkedText, issue, replacement) {
@@ -166,5 +200,5 @@
     return true;
   }
 
-  globalThis.LGPEditor = { apply, canReplace, editorFor, focused, languageHint, rangeFor, snapshot };
+  globalThis.LGPEditor = { apply, canReplace, groupFor, editorFor, focused, languageHint, rangeFor, snapshot };
 })();
