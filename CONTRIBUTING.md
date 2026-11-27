@@ -36,4 +36,4 @@ git tag -a v4.0.1 -m "Local Grammar Pro 4.0.1"
 git push origin v4.0.1
 ```
 
-Veröffentliche das ZIP zusammen mit `SHA256SUMS` im GitHub-Release zum Tag.
+Der Release-Workflow prüft den getaggten Stand und veröffentlicht das ZIP zusammen mit `SHA256SUMS`. Ein erneuter Lauf vergleicht ein bereits veröffentlichtes Archiv bytegenau mit dem neuen Build.

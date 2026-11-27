@@ -4,7 +4,7 @@
 
 - Reproduzierbarer ZIP-Build mit SHA-256 und Prüfung der eingebundenen Sprachpakete.
 - Automatisierte Prüfungen für JavaScript, WASM, das Installationsarchiv und die Chromium-Erweiterung.
-- Beitrags- und Release-Dokumentation, Vorlagen für GitHub und Abhängigkeitsupdates.
+- Arbeitsabläufe für Pull Requests, Releases und Abhängigkeitsupdates.
 
 ## 4.0.0
 

@@ -2,6 +2,7 @@
 
 Offline-Grammatikprüfung für Chrome und Chromium. LingoTweaker-WASM 0.2.8 prüft Rechtschreibung, Grammatik und Stil auf Deutsch (Deutschland), Englisch (USA) und Englisch (Großbritannien). Das Archiv enthält den vollständigen Erweiterungscode, die WASM-Engine und beide Sprachpakete.
 
+[![CI](https://github.com/erazer90/Localgrammar/actions/workflows/ci.yml/badge.svg)](https://github.com/erazer90/Localgrammar/actions/workflows/ci.yml)
 
 ## Installation
 
