@@ -46,6 +46,6 @@ test("local rules work with the fallback and leave correct expressions alone", (
 test("German punctuation and fixed phrases use context", () => {
   const text = "Ich hoffe dass das die selbe Frage ist. Vielen dank für deine Hilfe!";
   assert.deepEqual(fallbackCheck(text, "de", "", []).issues.map(issue => issue.suggestions[0]),
-    [", dass", "dieselbe", "Dank"]);
+    [",", "dieselbe", "Dank"]);
   assert.deepEqual(fallbackCheck("Ich hoffe, dass das dieselbe Frage ist. Vielen Dank für deine Hilfe!", "de", "", []).issues, []);
 });

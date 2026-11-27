@@ -255,6 +255,12 @@ test("marks settle after checking and popup stays usable", async () => {
       return count;
     });
     expect(changes).toBeLessThan(8);
+    await page.bringToFront();
+    const worker = context.serviceWorkers()[0];
+    await worker.evaluate(() => chrome.action.openPopup());
+    await expect.poll(() => worker.evaluate(async () =>
+      (await chrome.runtime.getContexts({ contextTypes: ["POPUP"] })).length)).toBeGreaterThan(0);
+    await popup.bringToFront();
     await popup.goto(`${extension}/ui/popup.html`);
     await expect(popup.locator("#enabled")).toBeEnabled();
     await popup.locator("#enabled").uncheck();
@@ -263,5 +269,38 @@ test("marks settle after checking and popup stays usable", async () => {
   } finally {
     await page.close();
     await popup.close();
+  }
+});
+
+test("a missing comma in a modal editor is clickable and undoable", async () => {
+  const page = await context.newPage();
+  try {
+    await page.goto(origin);
+    const text = "Wir bleiben zu Hause weil es regnet.";
+    const point = await page.evaluate(value => {
+      const dialog = document.createElement("dialog");
+      const editor = document.createElement("div");
+      editor.id = "modal-editor";
+      editor.contentEditable = "true";
+      editor.textContent = value;
+      dialog.append(editor);
+      document.body.append(dialog);
+      dialog.showModal();
+      editor.focus();
+      const range = new Range();
+      range.setStart(editor.firstChild, value.indexOf(" weil"));
+      range.collapse(true);
+      const box = range.getBoundingClientRect();
+      return { x: box.x + 1, y: box.y + box.height / 2 };
+    }, text);
+    await expect(page.locator("dialog > local-grammar-pro")).toHaveCount(1);
+    await page.mouse.click(point.x, point.y);
+    await applyFirstSuggestion(page);
+    const editor = page.locator("#modal-editor");
+    await expect(editor).toHaveText("Wir bleiben zu Hause, weil es regnet.");
+    await page.keyboard.press("Control+z");
+    await expect(editor).toHaveText(text);
+  } finally {
+    await page.close();
   }
 });

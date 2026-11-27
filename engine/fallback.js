@@ -1,3 +1,4 @@
+import { normalizeText } from "./text.js";
 import { finishIssues } from "./findings.js";
 import { limitText } from "./limits.js";
 
@@ -39,7 +40,8 @@ export function fallbackLanguage(text, preference, hint) {
 }
 
 export function fallbackCheck(value, preference, hint, ignoredRules, dictionary = [], styleHints = true) {
-  const text = limitText(value);
+  const source = limitText(value);
+  const { text, restore } = normalizeText(source);
   const language = fallbackLanguage(text, preference, hint);
   const ignored = new Set(ignoredRules);
   const issues = [];
@@ -54,5 +56,6 @@ export function fallbackCheck(value, preference, hint, ignoredRules, dictionary 
       issues.push({ id, start, end, original, message, kind: style ? "style" : "grammar", suggestions });
     }
   }
-  return { engine: "fallback", language, truncated: text.length < value.length, issues: finishIssues(text, language, issues, ignored, dictionary, styleHints) };
+  return { engine: "fallback", language, truncated: source.length < value.length,
+    issues: restore(finishIssues(text, language, issues, ignored, dictionary, styleHints)) };
 }

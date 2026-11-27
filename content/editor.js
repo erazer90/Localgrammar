@@ -80,7 +80,7 @@
         }
         return;
       }
-      if (!(node instanceof HTMLElement) || node.hidden || /^(SCRIPT|STYLE|TEMPLATE)$/u.test(node.tagName)) return;
+      if (!(node instanceof HTMLElement) || node.localName === "local-grammar-pro" || node.hidden || /^(SCRIPT|STYLE|TEMPLATE)$/u.test(node.tagName)) return;
       if (isPrivate(node) || node.getAttribute("contenteditable")?.toLowerCase() === "false"
           || /^(IMG|INPUT|IFRAME|HR|VIDEO|CANVAS)$/u.test(node.tagName)) {
         if (text) lineBreak(true);

@@ -6,6 +6,8 @@
       color-scheme: light dark !important; }
     .line { all: unset; box-sizing: border-box; position: fixed; pointer-events: none;
       border-bottom: 2px solid var(--mark); border-radius: 2px; }
+    .insertion::after { content: ""; position: absolute; bottom: -2px; left: 3px; height: 5px;
+      border-left: 2px solid var(--mark); }
     .line[data-current] { background: color-mix(in srgb, var(--mark) 25%, transparent); }
     .spelling { --mark: #e34b5d; } .grammar { --mark: #477bdf; } .style { --mark: #9b66d6; }
     @media (prefers-color-scheme: dark) {
@@ -104,9 +106,9 @@
     return clip;
   }
 
-  function fragments(rectangles, clip) {
-    return Array.from(rectangles, box => rect(Math.max(box.left, clip.left),
-      Math.max(box.top, clip.top), Math.min(Math.max(box.right, box.left + 3), clip.right),
+  function fragments(rectangles, clip, insertion) {
+    return Array.from(rectangles, box => rect(Math.max(box.left - (insertion ? 4 : 0), clip.left),
+      Math.max(box.top, clip.top), Math.min(Math.max(box.right, box.left + (insertion ? 7 : 3)), clip.right),
       Math.min(box.bottom, clip.bottom))).filter(box => box.width >= 2 && box.height >= 4);
   }
 
@@ -174,7 +176,9 @@
         this.clear();
         return;
       }
-      if (!this.host.isConnected) document.documentElement.append(this.host);
+      // Elements outside a modal are inert, regardless of their z-index.
+      const parent = editor.closest("dialog:modal") ?? document.documentElement;
+      if (this.host.parentNode !== parent) parent.append(this.host);
       const clip = clipBox(editor, view.plain);
       const node = view.plain ? this.prepareMirror(editor, view.text) : null;
       const scrollAnchor = this.anchor;
@@ -191,10 +195,12 @@
           range = LGPEditor.rangeFor(view, issue.start, issue.end);
         }
         if (!range) continue;
-        for (const box of fragments(range.getClientRects(), clip)) {
+        const insertion = issue.start === issue.end;
+        for (const box of fragments(range.getClientRects(), clip, insertion)) {
           const hit = { issue, box };
           this.hits.push(hit);
           const mark = element("span", `line ${issue.kind}`);
+          if (insertion) mark.classList.add("insertion");
           mark.setAttribute("aria-hidden", "true");
           Object.assign(mark.style, {
             left: `${box.left}px`, top: `${box.top}px`,
@@ -241,7 +247,7 @@
       if (issue.suggestions.length && handlers.apply) {
         const suggestions = element("div", "suggestions");
         for (const value of issue.suggestions) {
-          suggestions.append(button(value || "Entfernen", () => handlers.apply(value)));
+          suggestions.append(button(value === " " ? "Leerzeichen einfügen" : value || "Entfernen", () => handlers.apply(value)));
         }
         card.append(suggestions);
       } else if (issue.suggestions.length) {
