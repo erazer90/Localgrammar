@@ -1,5 +1,11 @@
 # Changelog
 
+## 4.1.3
+
+- Deutsche Kasusprüfung nutzt die Wortformen aus dem mitgelieferten Wörterbuch. Sie erkennt Formen wie „mit mein Chef“, „mit ihre Kinder“ und „bei unser neuer Nachbar“.
+- Mehr passende Verbformen und Pflichtkommas an erkennbaren Satzgrenzen.
+- Kontraktionen wie „am“ und „beim“ helfen, fehlende Großschreibung in „am montag“ und „beim kochen“ zu erkennen.
+
 ## 4.1.2
 
 - Zusätzliche Pflichtkommas bei Nebensätzen, Infinitivgruppen und Anreden. Fehlende Zeichen lassen sich direkt einfügen.

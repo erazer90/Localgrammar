@@ -17,7 +17,14 @@ const imperative = /^(?:melde|sag|sage|ruf|rufe|komm|komme|geh|gehe|bleib|bleibe
 const clausePieces = /[^,.!?;:…\n\r]+/gu;
 const wordPattern = /\p{L}[\p{L}\p{M}’'–-]*/gu;
 
-function clauseCommas(text, add) {
+function unambiguousFinite(word, lexicon) {
+  if (!lexicon) return false;
+  const entries = lexicon.analyses(word);
+  return entries.some(({ tag }) => /^VER:(?:(?:AUX|MOD):)?[123]:(?:SIN|PLU):/u.test(tag))
+    && entries.every(({ tag }) => tag.startsWith("VER:") && !tag.includes(":INF"));
+}
+
+function clauseCommas(text, add, lexicon) {
   for (const clause of text.matchAll(clausePieces)) {
     const words = [...clause[0].matchAll(wordPattern)];
     const boundary = text[clause.index - 1];
@@ -67,11 +74,13 @@ function clauseCommas(text, add) {
           || /^(?:den|dem|der|die|das|ein|eine|einen|meine|deine|seine)\b/u.test(next[0])));
       const closesSubordinate = i >= 3 && !boundary?.match(/[:,]/u)
         && (subordinators.has(initial) || ambiguous.has(initial))
-        && finite.test(previous[0])
-        && (imperative.test(next[0]) || finite.test(next[0]))
+        && (finite.test(previous[0]) || unambiguousFinite(previous[0], lexicon))
+        && (imperative.test(next[0]) || finite.test(next[0]) || unambiguousFinite(next[0], lexicon))
         && /^(?:ich|du|er|sie|es|wir|ihr|man|bitte|mich|dich|uns)$/iu.test(words[i + 1][0]);
       const closesRelative = relativeStart >= 0 && relativeStart + 2 < i
-        && finite.test(previous[0]) && /^(?:ist|sind|war|waren|wird|werden|hat|haben|kann|können|muss|müssen)$/u.test(next[0]);
+        && (lexicon
+          ? unambiguousFinite(previous[0], lexicon) && unambiguousFinite(next[0], lexicon)
+          : finite.test(previous[0]) && /^(?:ist|sind|war|waren|wird|werden|hat|haben|kann|können|muss|müssen)$/u.test(next[0]));
       if (hasClause || isInfinitive || closesSubordinate || closesRelative) {
         add(isInfinitive ? "DE_KOMMA_INFINITIV" : "DE_KOMMA_NEBENSATZ", clause.index + next.index - gap.length,
           "", ",", isInfinitive ? "Die Infinitivgruppe wird durch ein Komma abgegrenzt." : "Hier trennt ein Komma die Satzteile.");
@@ -80,14 +89,14 @@ function clauseCommas(text, add) {
   }
 }
 
-export function germanPunctuation(text) {
+export function germanPunctuation(text, lexicon) {
   const issues = [];
   function add(id, start, original, replacement, message) {
     issues.push({ id, start, end: start + original.length, original, message, kind: "grammar",
       suggestions: [replacement], preferred: true });
   }
 
-  clauseCommas(text, add);
+  clauseCommas(text, add, lexicon);
   for (const match of text.matchAll(/(?:^|[.!?]\s+)(?:Hallo|Hi)[ \t]+\p{Lu}\p{Ll}+[ \t]+(?=(?:wie|wann|wo|was|warum|kannst|hast|bist)\b)/gu)) {
     const end = match.index + match[0].trimEnd().length;
     add("DE_KOMMA_ANREDE", end, "", ",", "Die Anrede wird vom folgenden Satz getrennt.");

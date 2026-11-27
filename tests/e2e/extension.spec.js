@@ -304,3 +304,31 @@ test("a missing comma in a modal editor is clickable and undoable", async () => 
     await page.close();
   }
 });
+
+test("dictionary case correction can be applied and undone in a text field", async () => {
+  const page = await context.newPage();
+  try {
+    await page.goto(origin);
+    const editor = page.locator("#plain");
+    const text = "Ich spreche mit mein Chef.";
+    await editor.fill(text);
+    await expect(page.locator("local-grammar-pro")).toHaveCount(1);
+    const click = await editor.evaluate(node => {
+      const style = getComputedStyle(node);
+      const measure = document.createElement("canvas").getContext("2d");
+      measure.font = style.font;
+      const bounds = node.getBoundingClientRect();
+      return {
+        x: bounds.left + node.clientLeft + parseFloat(style.paddingLeft) + measure.measureText("Ich spreche mit me").width,
+        y: bounds.top + node.clientTop + parseFloat(style.paddingTop) + parseFloat(style.fontSize) / 2
+      };
+    });
+    await page.mouse.click(click.x, click.y);
+    await applyFirstSuggestion(page);
+    await expect(editor).toHaveValue("Ich spreche mit meinem Chef.");
+    await page.keyboard.press("Control+z");
+    await expect(editor).toHaveValue(text);
+  } finally {
+    await page.close();
+  }
+});
