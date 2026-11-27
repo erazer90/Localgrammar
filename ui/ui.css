@@ -1,0 +1,79 @@
+:root {
+  color-scheme: light dark;
+  --canvas: light-dark(#edf2f8, #101521);
+  --surface: light-dark(#fff, #1b2333);
+  --text: light-dark(#17243c, #f0f4ff);
+  --muted: light-dark(#51627e, #b9c5dd);
+  --border: light-dark(#d1dae9, #3c4a63);
+  --accent: light-dark(#2154a6, #adcaff);
+  --on-accent: light-dark(#fff, #102245);
+  --soft: light-dark(#eaf1ff, #253450);
+  --green: light-dark(#14654e, #85dfbb);
+  --danger: light-dark(#9c3147, #ff9fb3);
+  font: 15px/1.5 system-ui, sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { margin: 0; color: var(--text); background: var(--canvas); }
+main { width: min(100% - 32px, 720px); margin: 36px auto; }
+h1, h2, p { margin: 0; }
+h1 { font-size: 1.85rem; line-height: 1.15; }
+h2 { font-size: 1.05rem; }
+.brand { display: flex; gap: 12px; align-items: center; }
+.brand img { width: 40px; height: 40px; flex: none; }
+.subtle, .empty, .help { color: var(--muted); font-size: .9rem; }
+.empty { padding-block: 8px; }
+.intro { margin: 10px 0 18px; }
+.card {
+  margin-block: 12px;
+  padding: 17px 19px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 13px;
+}
+.row, .add, .entries li { display: flex; gap: 10px; align-items: center; }
+.row { justify-content: space-between; min-height: 46px; }
+.row + .row, .entries li + li { border-top: 1px solid var(--border); }
+.row input[type="checkbox"] { appearance: none; margin: 0; cursor: pointer; flex: none;
+  width: 35px; height: 21px; border: 1px solid var(--border); border-radius: 30px; background: var(--canvas); }
+.row input[type="checkbox"]::after { content: ""; display: block; width: 13px; height: 13px;
+  margin: 3px; border-radius: 50%; background: var(--muted); }
+.row input[type="checkbox"]:checked { background: var(--accent); border-color: var(--accent); }
+.row input[type="checkbox"]:checked::after { transform: translateX(14px); background: var(--on-accent); }
+.row input:disabled { opacity: .48; cursor: default; }
+button, input, select, textarea { font: inherit; }
+button, select { cursor: pointer; }
+button, select, input[type="text"], textarea {
+  border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 7px; min-height: 35px;
+}
+button { padding: 5px 10px; }
+button:hover { background: var(--soft); }
+button:disabled { opacity: .5; cursor: default; }
+select, input[type="text"], textarea { padding: 5px 8px; }
+button.primary { border-color: var(--accent); background: var(--accent); color: var(--on-accent); font-weight: 600; }
+button.primary:hover { filter: brightness(.9); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.help { margin: 4px 0 10px; }
+.add { align-items: start; }
+.add input, .add textarea { flex: 1; min-width: 80px; }
+.add textarea { resize: vertical; min-height: 68px; }
+.entries { list-style: none; padding: 0; max-height: 230px; overflow-y: auto; margin: 7px 0 0; }
+.entries li { justify-content: space-between; min-height: 44px; padding: 4px 3px; overflow-wrap: anywhere; }
+.entries button { color: var(--danger); font-size: .83rem; }
+.status { color: var(--muted); font-size: .88rem; min-height: 1.4em; margin-top: 8px; }
+.status[data-error] { color: var(--danger); }
+.offline { color: var(--green); font-size: .83rem; font-weight: 650; }
+.popup { width: 330px; background: var(--surface); }
+.popup main { width: auto; margin: 0; padding: 15px; }
+.popup h1 { font-size: 1.16rem; }
+.popup .brand img { width: 34px; height: 34px; }
+.popup .card { margin-block: 12px 9px; padding: 0 10px; }
+.popup .row { min-height: 43px; font-size: .9rem; min-width: 0; }
+.popup .row span { overflow-wrap: anywhere; }
+.popup .status:empty { display: none; }
+.popup .full { width: 100%; }
+.results { list-style: none; padding: 0; margin: 0; }
+.results li { padding-block: 10px; }
+.results li + li { border-top: 1px solid var(--border); }
+.result-original { color: var(--accent); font-weight: 650; white-space: pre-wrap; overflow-wrap: anywhere; }
+.fixes { color: var(--muted); margin-top: 4px; white-space: pre-wrap; overflow-wrap: anywhere; }

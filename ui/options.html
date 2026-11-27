@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Einstellungen · Local Grammar Pro</title>
+  <link rel="stylesheet" href="ui.css">
+  <script defer src="../settings.js"></script>
+  <script defer src="options.js"></script>
+</head>
+<body>
+  <main>
+    <header class="brand">
+      <img src="../icons/icon48.png" alt="">
+      <div><h1>Einstellungen</h1><p class="subtle">Local Grammar Pro</p></div>
+    </header>
+    <section class="card">
+      <h2>Prüfung</h2>
+      <label class="row"><span>Prüfung aktiv</span><input type="checkbox" id="enabled" disabled></label>
+      <label class="row"><span>Inline-Markierungen anzeigen</span><input type="checkbox" id="showInline" disabled></label>
+      <label class="row">
+        <span>Prüfsprache</span>
+        <select id="language" disabled>
+          <option value="de">Deutsch (DE)</option>
+          <option value="en">Englisch (US)</option>
+          <option value="en-GB">Englisch (UK)</option>
+          <option value="auto">Automatisch</option>
+        </select>
+      </label>
+      <p class="help">Im Textfeld öffnet <kbd>Alt</kbd> + <kbd>Umschalt</kbd> + <kbd>G</kbd> den nächsten sichtbaren Hinweis.</p>
+    </section>
+
+    <section class="card">
+      <h2>Persönliches Wörterbuch</h2>
+      <p class="help" id="dictionary-help">Ein Wort pro Zeile. Aufgenommene Wörter werden bei der Rechtschreibprüfung akzeptiert.</p>
+      <form class="add" id="dictionary-form">
+        <textarea id="words" rows="2" aria-label="Wörter hinzufügen" aria-describedby="dictionary-help" required></textarea>
+        <button type="submit" class="primary">Hinzufügen</button>
+      </form>
+      <ul class="entries" id="personalDictionary"></ul>
+      <p class="empty" id="personalDictionary-empty">Das Wörterbuch ist leer.</p>
+    </section>
+
+    <section class="card">
+      <h2>Ignorierte Regeln</h2>
+      <p class="help">Regeln, die du in einem Korrekturhinweis deaktiviert hast.</p>
+      <ul class="entries" id="ignoredRules"></ul>
+      <p class="empty" id="ignoredRules-empty">Keine Regeln ignoriert.</p>
+    </section>
+
+    <section class="card">
+      <h2>Pausierte Websites</h2>
+      <p class="help" id="site-help">Gilt für den eingegebenen Hostnamen. Subdomains kannst du separat einstellen.</p>
+      <form class="add" id="site-form">
+        <input type="text" id="hostname" aria-label="Hostname" aria-describedby="site-help"
+          placeholder="beispiel.de" spellcheck="false" autocomplete="off" required>
+        <button type="submit" class="primary">Pausieren</button>
+      </form>
+      <ul class="entries" id="pausedSites"></ul>
+      <p class="empty" id="pausedSites-empty">Keine Websites pausiert.</p>
+    </section>
+    <p class="status" id="status" role="status"></p>
+  </main>
+</body>
+</html>

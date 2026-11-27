@@ -1,0 +1,34 @@
+{
+  "manifest_version": 3,
+  "name": "Local Grammar Pro",
+  "version": "4.0.0",
+  "minimum_chrome_version": "123",
+  "description": "Grammatik und Rechtschreibung für Deutsch und Englisch. Die Prüfung läuft offline auf deinem Gerät.",
+  "permissions": ["storage", "activeTab", "contextMenus", "offscreen"],
+  "background": { "service_worker": "background.js", "type": "module" },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'none'; connect-src 'self'; worker-src 'self';"
+  },
+  "content_scripts": [{
+    "matches": ["http://*/*", "https://*/*"],
+    "js": ["settings.js", "content/editor.js", "content/marks.js", "content/controller.js"],
+    "run_at": "document_idle",
+    "all_frames": true,
+    "match_origin_as_fallback": true
+  }],
+  "action": {
+    "default_popup": "ui/popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png"
+    }
+  },
+  "options_ui": { "page": "ui/options.html", "open_in_tab": true },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

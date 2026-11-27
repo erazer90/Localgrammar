@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Local Grammar Pro</title>
+  <link rel="stylesheet" href="ui.css">
+  <script defer src="../settings.js"></script>
+  <script defer src="popup.js"></script>
+</head>
+<body class="popup">
+  <main>
+    <header class="brand">
+      <img src="../icons/icon48.png" alt="">
+      <div><h1>Local Grammar Pro</h1><p class="offline">Prüft offline</p></div>
+    </header>
+    <div class="card">
+      <label class="row"><span>Prüfung aktiv</span><input type="checkbox" id="enabled" disabled></label>
+      <label class="row">
+        <span>Sprache</span>
+        <select id="language" disabled>
+          <option value="de">Deutsch (DE)</option>
+          <option value="en">Englisch (US)</option>
+          <option value="en-GB">Englisch (UK)</option>
+          <option value="auto">Automatisch</option>
+        </select>
+      </label>
+      <label class="row">
+        <span id="site-label">Auf dieser Website prüfen</span>
+        <input type="checkbox" id="site" disabled>
+      </label>
+    </div>
+    <button type="button" class="full" id="options">Einstellungen</button>
+    <p class="status" id="status" role="status"></p>
+  </main>
+</body>
+</html>
