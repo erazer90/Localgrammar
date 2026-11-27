@@ -1,6 +1,6 @@
 # Changelog
 
-## Unveröffentlicht
+## 4.1.0
 
 - Popup, Einstellungen, Auswahlbericht und Korrekturkarte überarbeitet. Das neue Logo erscheint auch in der Browserleiste.
 - Markierte Wörter lassen sich über die gesamte Texthöhe anklicken. Benachbarte Korrekturen können nach Vorschau gemeinsam übernommen werden.
