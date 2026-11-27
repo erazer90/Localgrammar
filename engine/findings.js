@@ -13,6 +13,9 @@ export function finishIssues(text, language, base, ignored, dictionary, styleHin
   const issues = [...local];
   for (const issue of base) {
     if (!visible(issue)) continue;
+    if (language === "de" && issue.id === "IM_IHM_SPELLING_RULE"
+        && extra.some(item => item.id === "DE_ORT_NOMEN"
+          && /^[ \t]+$/u.test(text.slice(issue.end, item.start)))) continue;
     const preferred = bySpan.get(`${issue.start}:${issue.end}`);
     if (preferred && (issue.kind === "spelling" || issue.suggestions.includes(preferred.suggestions[0]))) {
       preferred.suggestions = [...new Set([...preferred.suggestions, ...issue.suggestions])].slice(0, 8);

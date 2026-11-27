@@ -65,3 +65,14 @@ test("German proofreading ranks contextual corrections and respects style, dicti
   assert.ok(filtered.issues.some(issue => issue.original === "IIhn"));
   assert.ok(!filtered.issues.some(issue => ["vorallem", "fürcherlich", "Spigel", "gehts"].includes(issue.original)));
 });
+
+test("location nouns are corrected without changing the preposition im", async () => {
+  const text = "Gestern war ich mit meinen Freunden im park. Leider hat es plözlich angefangen zu regnen. Wir sind nach hause gegangen. Es war trozdem schön, weil wir viel spaß hatten.";
+  const result = await checkWithWasm(text, "de", "", [], []);
+  for (const [word, correction] of Object.entries({ park: "Park", plözlich: "plötzlich", hause: "Hause", trozdem: "trotzdem", spaß: "Spaß" })) {
+    assert.ok(result.issues.some(issue => issue.original === word && issue.suggestions.includes(correction)), word);
+  }
+  assert.ok(!result.issues.some(issue => issue.original === "im"));
+  const correct = await checkWithWasm("Ich sitze im Park. Ich helfe ihm. Ich park hier.", "de", "", [], []);
+  assert.ok(!correct.issues.some(issue => issue.id === "DE_ORT_NOMEN"));
+});
