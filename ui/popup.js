@@ -28,17 +28,23 @@ language.addEventListener("change", () => save({ key: "language", value: languag
 siteToggle.addEventListener("change", () => save({ key: "pausedSites", value: site, remove: siteToggle.checked }));
 document.getElementById("options").addEventListener("click", () => chrome.runtime.openOptionsPage());
 
-Promise.all([LGPSettings.read(), chrome.tabs.query({ active: true, currentWindow: true })]).then(([settings, [tab]]) => {
-  site = LGPSettings.hostname(tab?.url ?? "");
-  if (site) siteLabel.textContent = site;
+LGPSettings.read().then(settings => {
   render(settings);
   enabled.disabled = false;
   language.disabled = false;
-  siteToggle.disabled = !site;
   chrome.storage.onChanged.addListener((_changes, area) => {
-    if (area === "local") LGPSettings.read().then(render);
+    if (area === "local") LGPSettings.read().then(render).catch(() => {});
   });
 }).catch(() => {
   status.textContent = "Einstellungen konnten nicht geladen werden.";
   status.dataset.error = "";
+});
+
+chrome.tabs.query({ active: true, currentWindow: true }).then(async ([tab]) => {
+  site = LGPSettings.hostname(tab?.url ?? "");
+  if (site) siteLabel.textContent = site;
+  render(await LGPSettings.read());
+  siteToggle.disabled = !site;
+}).catch(() => {
+  siteLabel.textContent = "Website nicht verfügbar";
 });

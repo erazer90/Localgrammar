@@ -1,5 +1,12 @@
 # Changelog
 
+## 4.1.1
+
+- Korrekte Großschreibung in Ortsangaben wie „im park“, ohne falschen Vorschlag für „im“.
+- Rückkopplung beim Neuzeichnen der Markierungen behoben.
+- Popup lädt Einstellungen unabhängig von der Ermittlung der Website.
+- GitHub-Startseite mit Logo, Screenshots und kürzerer Installation.
+
 ## 4.1.0
 
 - Popup, Einstellungen, Auswahlbericht und Korrekturkarte überarbeitet. Das neue Logo erscheint auch in der Browserleiste.

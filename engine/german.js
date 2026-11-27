@@ -11,6 +11,8 @@ const letter = "[\\p{L}\\p{M}\\p{N}_-]";
 const misspellings = new RegExp(`(?<!${letter})(${[...spelling.keys()].join("|")})(?!${letter})`, "dgiu");
 
 const rules = [
+  ["DE_ORT_NOMEN", /(?<!\p{L})(?:[Ii]m|[Aa]m|[Zz]um|[Vv]om|[Bb]eim|[Ii]n dem|[Aa]n dem|[Ii]n den|[Dd]urch den|[Ii]n einem)[ \t]+(park|garten|wald|büro|kino|haus|bahnhof|see|restaurant|museum|hotel|supermarkt|schwimmbad|krankenhaus|zug|bus|auto|zimmer|urlaub)(?![\p{L}-])/dgu,
+    word => word[0].toUpperCase() + word.slice(1), "grammar", "Das Nomen nach dieser Präposition wird großgeschrieben."],
   ["DE_SCHREIBWEISE", misspellings, word => spelling.get(word.toLowerCase()), "spelling", "Prüfe die Schreibweise."],
   ["DE_IM_VORAUS", /(?<![\p{L}-])[Ii]m[ \t]+([Vv]orraus|voraus)(?![\p{L}-])/dgu,
     () => "Voraus", "grammar", "In der Wendung „im Voraus“ wird das Nomen großgeschrieben."],

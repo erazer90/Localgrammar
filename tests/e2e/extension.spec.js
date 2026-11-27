@@ -238,3 +238,30 @@ test("clicking adjacent words offers one undoable edit and respects grouping set
     await options.close();
   }
 });
+
+test("marks settle after checking and popup stays usable", async () => {
+  const page = await context.newPage();
+  const popup = await context.newPage();
+  try {
+    await page.goto(origin);
+    await page.locator("#plain").fill("Gestern war ich mit meinen Freunden im park.");
+    await expect(page.locator("local-grammar-pro")).toHaveCount(1);
+    const changes = await page.evaluate(async () => {
+      let count = 0;
+      const observer = new MutationObserver(() => count++);
+      observer.observe(document.documentElement, { childList: true, subtree: true });
+      await new Promise(resolve => setTimeout(resolve, 700));
+      observer.disconnect();
+      return count;
+    });
+    expect(changes).toBeLessThan(8);
+    await popup.goto(`${extension}/ui/popup.html`);
+    await expect(popup.locator("#enabled")).toBeEnabled();
+    await popup.locator("#enabled").uncheck();
+    await expect(page.locator("local-grammar-pro")).toHaveCount(0);
+    await popup.locator("#enabled").check();
+  } finally {
+    await page.close();
+    await popup.close();
+  }
+});

@@ -288,7 +288,10 @@
   window.visualViewport?.addEventListener("scroll", render, { passive: true });
   document.fonts?.addEventListener("loadingdone", render);
   // Delegated editor events handle newly mounted fields without scanning the page.
-  new MutationObserver(() => {
+  new MutationObserver(records => {
+    if (records.every(record => record.target === marks.host || marks.host.contains(record.target)
+        || (record.type === "childList" && [...record.addedNodes, ...record.removedNodes]
+          .every(node => node === marks.host)))) return;
     if (state && (!state.editor.isConnected || editorApi.editorFor(state.editor) !== state.editor)) activate(editorApi.focused());
     else if (state?.view) render();
   }).observe(document.documentElement, {
