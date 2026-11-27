@@ -2,6 +2,10 @@
 
 ## Unveröffentlicht
 
+- Datenschutzbeschreibung und offene Lizenz-/Herkunftsfragen zur Weitergabe dokumentiert; neue automatische Releases bleiben Entwürfe.
+- Sensible bearbeitbare Bereiche und deaktivierte Feldgruppen werden von der Inline-Prüfung ausgeschlossen; Websites können Bereiche mit `data-local-grammar-ignore` ausnehmen.
+- Automatische Secret-Prüfung der Git-Historie und Ausschluss lokaler Geheimnisdateien aus neuen Commits.
+
 - Reproduzierbarer ZIP-Build mit SHA-256 und Prüfung der eingebundenen Sprachpakete.
 - Automatisierte Prüfungen für JavaScript, WASM, das Installationsarchiv und die Chromium-Erweiterung.
 - Arbeitsabläufe für Pull Requests, Releases und Abhängigkeitsupdates.

@@ -25,6 +25,8 @@ Bei einem Update der Engine gehören die Binärdateien, Sprachpakete, Herkunftsa
 
 ## Ein Release erstellen
 
+Die offenen Punkte in [DISTRIBUTION.md](DISTRIBUTION.md) müssen vor einer Veröffentlichung geklärt sein. Technische Prüfergebnisse allein sind keine Lizenzfreigabe.
+
 1. Aktualisiere `manifest.json` und den Changelog im selben Pull Request.
 2. Führe die Prüfungen aus und baue das ZIP mit `npm run build`. Das Archiv und seine Prüfsumme liegen unter `dist/`.
 3. Setze nach dem Merge einen Tag, der exakt zur Manifestversion passt.
@@ -36,4 +38,4 @@ git tag -a v4.0.1 -m "Local Grammar Pro 4.0.1"
 git push origin v4.0.1
 ```
 
-Der Release-Workflow prüft den getaggten Stand und veröffentlicht das ZIP zusammen mit `SHA256SUMS`. Ein erneuter Lauf vergleicht ein bereits veröffentlichtes Archiv bytegenau mit dem neuen Build.
+Der Release-Workflow prüft den getaggten Stand und legt das ZIP zusammen mit `SHA256SUMS` als Release-Entwurf an. Veröffentliche diesen erst nach Klärung der Weitergaberechte und Prüfung des Pakets manuell. Öffentliche Branches, Tags und CI-Artefakte bleiben auch bei einem Release-Entwurf öffentlich. Ein erneuter Lauf vergleicht ein bereits vorhandenes Archiv bytegenau mit dem neuen Build.

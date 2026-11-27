@@ -3,16 +3,27 @@
   const TEXT_INPUTS = new Set(["text", "search"]);
   const PRIVATE_AUTOCOMPLETE = /(?:^|\s)(?:username|(?:current|new)-password|one-time-code|cc-\S+)(?:\s|$)/i;
 
+  function isPrivate(element) {
+    return element.hasAttribute("data-local-grammar-ignore")
+      || PRIVATE_AUTOCOMPLETE.test(element.getAttribute("autocomplete") || "");
+  }
+
+  function hasPrivateAncestor(element) {
+    for (let node = element; node instanceof Element; node = node.parentElement ?? node.getRootNode().host) {
+      if (isPrivate(node)) return true;
+    }
+    return false;
+  }
+
   function isPlain(editor) {
     return editor instanceof HTMLTextAreaElement || editor instanceof HTMLInputElement;
   }
 
   function editorFor(eventOrNode) {
     const target = eventOrNode?.composedPath?.().find(node => node instanceof Element) ?? eventOrNode;
-    if (!(target instanceof HTMLElement)) return null;
+    if (!(target instanceof HTMLElement) || hasPrivateAncestor(target)) return null;
     if (isPlain(target)) {
-      const autocomplete = target.getAttribute("autocomplete") || "";
-      if (target.disabled || target.readOnly || PRIVATE_AUTOCOMPLETE.test(autocomplete)
+      if (target.matches(":disabled") || target.readOnly
           || (target instanceof HTMLInputElement && !TEXT_INPUTS.has(target.type))) return null;
       return target;
     }
@@ -70,7 +81,8 @@
         return;
       }
       if (!(node instanceof HTMLElement) || node.hidden || /^(SCRIPT|STYLE|TEMPLATE)$/u.test(node.tagName)) return;
-      if (node.getAttribute("contenteditable")?.toLowerCase() === "false" || /^(IMG|INPUT|IFRAME|HR|VIDEO|CANVAS)$/u.test(node.tagName)) {
+      if (isPrivate(node) || node.getAttribute("contenteditable")?.toLowerCase() === "false"
+          || /^(IMG|INPUT|IFRAME|HR|VIDEO|CANVAS)$/u.test(node.tagName)) {
         if (text) lineBreak(true);
         return;
       }

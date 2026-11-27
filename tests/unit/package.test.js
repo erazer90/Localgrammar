@@ -15,6 +15,9 @@ test("installable ZIP is reproducible and contains only the extension tree", asy
   assert.equal(first.digest, second.digest);
   assert.equal(first.filename, `LocalGrammarPro-${manifest.version}.zip`);
   assert.ok(archive["LocalGrammarPro/engine/vendor/lt_wasm_bg.wasm"]);
+  assert.ok(archive["LocalGrammarPro/PRIVACY.md"]);
+  assert.ok(archive["LocalGrammarPro/DISTRIBUTION.md"]);
+  assert.ok(archive["LocalGrammarPro/LICENSES.md"]);
   for (const language of ["de", "en"]) {
     assert.ok(archive[`LocalGrammarPro/engine/vendor/packs/${language}.pack.gz`]);
   }
