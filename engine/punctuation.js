@@ -42,23 +42,27 @@ function clauseCommas(text, add) {
       if (!/^[ \t]+$/u.test(gap) || coordination.test(previous[0].toLowerCase())) continue;
       const word = next[0];
       const hasSubject = subject.test(after);
+      const finiteAfter = finite.test(words.at(-1)?.[0])
+        || /^\p{Ll}{2,}(?:t|en)$/u.test(words.at(-1)?.[0]);
       // Determiners and subjects keep “bis morgen”, “während des Urlaubs”,
       // and the pronominal “damit” out of this rule.
       const hasClause = (subordinators.has(word) && !/^(?:wort|ausdruck|begriff|konjunktion)$/iu.test(previous[0]))
-        || (ambiguous.has(word) && hasSubject)
+        || (ambiguous.has(word) && hasSubject
+          && (word !== "während" || relativeSubject.test(words[i + 1][0]) || finiteAfter))
         || (indirect.has(word) && (hasSubject || (word === "ob" && /^und\s+wann\s/u.test(after)))
           && reporting.test(before) && !/^(?:so|genauso|ebenso|anders|aus)$/iu.test(previous[0]))
         || ((word === "aber" || word === "sondern") && hasSubject && i >= 2);
       const hasGovernor = infinitiveGovernor.test(previous[0]);
-      const infinitiveMarker = ["um", "ohne", "statt", "anstatt", "außer"].includes(word);
+      const connectorGap = clause[0].slice(next.index + next[0].length, words[i + 1].index);
+      const infinitiveMarker = ["um", "ohne", "statt", "anstatt", "außer"].includes(word)
+        && /^[ \t]+$/u.test(connectorGap);
       const laterWords = (hasGovernor || infinitiveMarker) ? words.slice(i + 1) : [];
       const hasInfinitive = laterWords.some((entry, index) => (
-        entry[0] === "zu" && /^\p{Ll}{2,}en$/u.test(laterWords[index + 1]?.[0] || "")
+        entry[0] === "zu" && /^(?:\p{Ll}{2,}en|tun|sein)$/u.test(laterWords[index + 1]?.[0] || "")
       ) || /^\p{Ll}{2,}zu\p{Ll}{2,}en$/u.test(entry[0]));
       // An unexpanded zu-infinitive can be integrated in the predicate.
-      const expanded = laterWords.length >= (hasGovernor ? 2 : 3) && hasInfinitive;
-      const isInfinitive = (infinitiveMarker && expanded)
-        || (hasGovernor && expanded && (hasSubject
+      const isInfinitive = (infinitiveMarker && hasInfinitive)
+        || (hasGovernor && laterWords.length >= 2 && hasInfinitive && (hasSubject
           || /^(?:ihn|sie|es|sie alle|uns|euch|noch|heute|morgen|rechtzeitig)\b/u.test(next[0])
           || /^(?:den|dem|der|die|das|ein|eine|einen|meine|deine|seine)\b/u.test(next[0])));
       const closesSubordinate = i >= 3 && !boundary?.match(/[:,]/u)
@@ -93,7 +97,7 @@ export function germanPunctuation(text) {
   }
   for (const match of text.matchAll(/(?<=[\p{L}\p{N}])([,;:])(?=[\p{L}„»])/dgu)) {
     const token = text.slice(0, match.index).match(/\S+$/u)?.[0] ?? "";
-    if (/[/:@#]/u.test(token)) continue;
+    if (/[/:@#]/u.test(token) || /^(?:mailto|tel|urn|sms)$/iu.test(token)) continue;
     add("DE_SATZZEICHEN_ABSTAND", match.index + 1, "", " ", "Nach diesem Satzzeichen fehlt ein Leerzeichen.");
   }
   for (const match of text.matchAll(/(?<=\p{L})(,{2,}|;{2,})(?=[ \t]+\p{L})/gu)) {
