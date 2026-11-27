@@ -182,7 +182,7 @@
     if (!state) return;
     changes.observe(editor, {
       subtree: true, childList: true, characterData: true, attributes: true,
-      attributeFilter: ["contenteditable", "hidden", "readonly", "disabled", "type", "lang", "class", "style", "autocomplete"]
+      attributeFilter: ["contenteditable", "hidden", "readonly", "disabled", "type", "lang", "class", "style", "autocomplete", "data-local-grammar-ignore"]
     });
     resized.observe(editor);
     schedule(30);
@@ -258,9 +258,12 @@
   document.fonts?.addEventListener("loadingdone", render);
   // Delegated editor events handle newly mounted fields without scanning the page.
   new MutationObserver(() => {
-    if (state && !state.editor.isConnected) activate(editorApi.focused());
+    if (state && (!state.editor.isConnected || editorApi.editorFor(state.editor) !== state.editor)) activate(editorApi.focused());
     else if (state?.view) render();
-  }).observe(document.documentElement, { subtree: true, childList: true });
+  }).observe(document.documentElement, {
+    subtree: true, childList: true, attributes: true,
+    attributeFilter: ["autocomplete", "data-local-grammar-ignore", "disabled"]
+  });
 
   chrome.storage.onChanged.addListener((_changes, area) => {
     if (area === "local") LGPSettings.read().then(syncSettings).catch(() => {});

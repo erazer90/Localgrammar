@@ -117,3 +117,67 @@ test("the extension corrects textarea text and preserves formatting and undo in 
     await page.close();
   }
 });
+
+test("private fields and excluded editor fragments never enter grammar requests", async () => {
+  const page = await context.newPage();
+  const worker = context.serviceWorkers()[0];
+  await worker.evaluate(() => {
+    const probe = { texts: [] };
+    probe.listener = message => {
+      if (message?.action === "grammar.check") probe.texts.push(message.text);
+    };
+    globalThis.privacyProbe = probe;
+    chrome.runtime.onMessage.addListener(probe.listener);
+  });
+  const texts = () => worker.evaluate(() => globalThis.privacyProbe.texts);
+  const clear = () => worker.evaluate(() => { globalThis.privacyProbe.texts = []; });
+  try {
+    await page.goto(origin);
+    await page.locator("#plain").focus();
+    await expect.poll(texts).toContain("🙂 Die Gramatik ist schwierig.");
+    await expect(page.locator("local-grammar-pro")).toHaveCount(1);
+    await page.evaluate(() => {
+      const container = document.createElement("section");
+      container.innerHTML = `
+        <input id="otp" autocomplete="one-time-code" value="Testgeheimnis">
+        <textarea id="private-text" autocomplete="current-password">Testgeheimnis</textarea>
+        <div id="private-rich" contenteditable="true" autocomplete="cc-number">Testgeheimnis</div>
+        <div data-local-grammar-ignore><textarea id="optout">Testgeheimnis</textarea></div>
+        <div id="shadow-private" data-local-grammar-ignore></div>
+        <div id="dynamic"><textarea id="dynamic-text">Die Gramatik ist schwierig.</textarea></div>
+        <div id="partial" contenteditable="true">Die <span data-local-grammar-ignore>Testgeheimnis</span> Gramatik ist schwierig.</div>`;
+      document.body.append(container);
+      document.getElementById("shadow-private").attachShadow({ mode: "open" }).innerHTML =
+        '<textarea id="shadow-text">Testgeheimnis</textarea>';
+    });
+    await clear();
+    for (const selector of ["#password", "#otp", "#private-text", "#private-rich", "#optout", "#shadow-text"]) {
+      await page.locator(selector).focus();
+      // Wait beyond the 330 ms debounce to detect accidental background requests.
+      await page.waitForTimeout(650);
+      expect(await texts()).toEqual([]);
+      await expect(page.locator("local-grammar-pro")).toHaveCount(0);
+    }
+
+    await page.locator("#dynamic-text").focus();
+    await expect.poll(texts).toContain("Die Gramatik ist schwierig.");
+    await expect(page.locator("local-grammar-pro")).toHaveCount(1);
+    await clear();
+    await page.locator("#dynamic").evaluate(element => element.setAttribute("data-local-grammar-ignore", ""));
+    await page.locator("#dynamic-text").fill("Testgeheimnis");
+    await page.waitForTimeout(650);
+    expect(await texts()).toEqual([]);
+    await expect(page.locator("local-grammar-pro")).toHaveCount(0);
+
+    await page.locator("#partial").focus();
+    await expect.poll(async () => (await texts()).length).toBeGreaterThan(0);
+    expect((await texts()).every(text => !text.includes("Testgeheimnis"))).toBe(true);
+    expect((await texts()).some(text => text.includes("Gramatik"))).toBe(true);
+  } finally {
+    await worker.evaluate(() => {
+      chrome.runtime.onMessage.removeListener(globalThis.privacyProbe.listener);
+      delete globalThis.privacyProbe;
+    });
+    await page.close();
+  }
+});

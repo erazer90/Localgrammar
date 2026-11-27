@@ -4,6 +4,10 @@ Offline-Grammatikprüfung für Chrome und Chromium. LingoTweaker-WASM 0.2.8 prü
 
 [![CI](https://github.com/erazer90/Localgrammar/actions/workflows/ci.yml/badge.svg)](https://github.com/erazer90/Localgrammar/actions/workflows/ci.yml)
 
+**Stand der Weitergabe:** Die Lizenz für den eigenen Erweiterungscode und die Icons ist noch offen. Für Teile der englischen Sprachdaten fehlen Upstream-Nachweise. Vor einer Weiterverbreitung oder Nachnutzung müssen diese Fragen geklärt werden. [Details zu Herkunft und Lizenzen](DISTRIBUTION.md).
+
+Die Prüfung läuft lokal; Einstellungen, Wörterbuch und pausierte Hostnamen werden auf dem Gerät gespeichert. Für vertrauliche Websites kannst du die Prüfung pausieren. [Datenschutz, Speicherung und Berechtigungen](PRIVACY.md).
+
 ## Installation
 
 Für die Entwicklung kannst du dieses Repository klonen und direkt den Ordner mit der `manifest.json` als entpackte Erweiterung laden. Nach Codeänderungen die Erweiterung und die Test-Webseite neu laden.

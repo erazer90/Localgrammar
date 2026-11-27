@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import { zipSync } from "fflate";
 
 export const root = fileURLToPath(new URL("../", import.meta.url));
-const runtimeFiles = ["README.md", "LICENSES.md", "manifest.json", "background.js", "settings.js"];
+const runtimeFiles = ["README.md", "LICENSES.md", "PRIVACY.md", "DISTRIBUTION.md", "manifest.json", "background.js", "settings.js"];
 const runtimeDirs = ["content", "engine", "icons", "ui"];
 const vendorFiles = ["lt_wasm.js", "lt_wasm_bg.wasm", "packs/de.pack.gz", "packs/en.pack.gz"];
 

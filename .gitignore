@@ -3,3 +3,16 @@ dist/
 playwright-report/
 test-results/
 .DS_Store
+
+# Local secrets and machine-specific files
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.log
+.npmrc
+chrome-profile/
+chromium-profile/

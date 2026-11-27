@@ -45,6 +45,6 @@ jobs:
             cmp "$zip" "$existing/$zip"
             cmp SHA256SUMS "$existing/SHA256SUMS"
           else
-            gh release create "$RELEASE_TAG" "$zip" SHA256SUMS --verify-tag --generate-notes \
+            gh release create "$RELEASE_TAG" "$zip" SHA256SUMS --draft --verify-tag --generate-notes \
               --title "Local Grammar Pro ${RELEASE_TAG#v}"
           fi
