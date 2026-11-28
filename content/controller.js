@@ -26,6 +26,7 @@
   function invalidate() {
     if (!state) return;
     state.revision++;
+    state.retried = false;
     state.view = null;
     state.issues = [];
     marks.clear();
@@ -60,15 +61,34 @@
     const distance = section => Math.max(section.start - caret, caret - section.end + 1, 0);
     const sections = editorApi.checkSections(view.text).sort((a, b) => distance(a) - distance(b));
     const findings = [];
+    let previewTimer;
+    let previewPending = true;
+    let usedFallback = false;
     checking = true;
     try {
       for (const section of sections) {
         if (!section.text.trim()) continue;
         const key = JSON.stringify([hint, section.text]);
         const cached = current.cache.get(key);
+        if (!cached && !current.view && previewPending) {
+          previewTimer = setTimeout(async () => {
+            try {
+              const preview = await chrome.runtime.sendMessage({ action: "grammar.preview", text: section.text, hint, site });
+              if (!previewPending || current !== state || current.revision !== revision || !enabled()
+                  || !current.editor.isConnected || !preview?.issues?.length) return;
+              const latest = editorApi.snapshot(current.editor);
+              if (latest.incomplete || latest.text !== view.text) return;
+              current.view = latest;
+              current.issues = sectionIssues(preview, section, view.text.length);
+              render();
+            } catch { /* The full check can still complete independently. */ }
+          }, 1500);
+        }
         const response = cached ?? await chrome.runtime.sendMessage({
           action: "grammar.check", text: section.text, hint, site
         });
+        previewPending = false;
+        clearTimeout(previewTimer);
         if (current !== state || revision !== current.revision || !current.editor.isConnected || !enabled()) return;
         const latest = cached && current.view ? current.view : editorApi.snapshot(current.editor);
         if (latest.incomplete || latest.text !== view.text) {
@@ -81,20 +101,22 @@
           if (current.cache.size >= 48) current.cache.delete(current.cache.keys().next().value);
           current.cache.set(key, response);
         }
-        for (const issue of response.issues) {
-          const start = section.offset + issue.start;
-          const end = section.offset + issue.end;
-          if (start < section.start || start > section.end || (start === section.end && section.end !== view.text.length)) continue;
-          findings.push({ ...issue, start, end, fallback: response.engine === "fallback" });
-        }
+        usedFallback ||= response.engine === "fallback";
+        findings.push(...sectionIssues(response, section, view.text.length));
         current.view = latest;
         current.issues = findings.toSorted((a, b) => a.start - b.start || a.end - b.end);
         render();
+      }
+      if (usedFallback && !current.retried) {
+        current.retried = true;
+        schedule(31_000);
       }
     } catch {
       // An extension reload invalidates existing content script messaging.
       marks.clear();
     } finally {
+      previewPending = false;
+      clearTimeout(previewTimer);
       checking = false;
       if (queued) {
         queued = false;
@@ -102,6 +124,17 @@
         schedule(0);
       }
     }
+  }
+
+  function sectionIssues(response, section, length) {
+    const issues = [];
+    for (const issue of response.issues) {
+      const start = section.offset + issue.start;
+      const end = section.offset + issue.end;
+      if (start < section.start || start > section.end || (start === section.end && section.end !== length)) continue;
+      issues.push({ ...issue, start, end, fallback: response.engine === "fallback" });
+    }
+    return issues;
   }
 
   function draw() {

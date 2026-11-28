@@ -48,7 +48,8 @@ function dispatch() {
   }
   clearTimeout(entry.timer);
   active = entry;
-  entry.timer = setTimeout(stopWorker, 45_000);
+  // Compiling WASM and loading the initial language pack cost extra time.
+  entry.timer = setTimeout(stopWorker, worker ? 45_000 : 120_000);
   try {
     getWorker().postMessage({ id: entry.id, ...entry.payload });
   } catch {

@@ -1,5 +1,10 @@
 # Changelog
 
+## 4.2.1
+
+- Während eines langsamen Erststarts erscheinen bereits lokale Basishinweise. Die vollständige Prüfung aktualisiert sie, sobald das Sprachpaket bereit ist.
+- Bei einer vorübergehenden Ersatzprüfung wird das aktive Feld einmal automatisch erneut geprüft.
+
 ## 4.2.0
 
 - Zusätzliche Pflichtkommas an den Grenzen von Relativsätzen und erweiterten Infinitivgruppen.

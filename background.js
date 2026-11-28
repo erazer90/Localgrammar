@@ -111,7 +111,8 @@ chrome.runtime.onMessage.addListener((message, sender, reply) => {
     update.then(settings => reply({ ok: true, settings }), () => reply({ ok: false }));
     return true;
   }
-  if (message.action !== "grammar.check") return;
+  const preview = message.action === "grammar.preview";
+  if (!preview && message.action !== "grammar.check") return;
   const fromReport = sender.url?.startsWith(chrome.runtime.getURL("ui/selection.html"));
   const inline = !fromReport && !!sender.tab;
   if (!fromReport && !inline) return;
@@ -122,6 +123,11 @@ chrome.runtime.onMessage.addListener((message, sender, reply) => {
     if (!settings.enabled || (inline && !settings.showInline) || settings.pausedSites.includes(site)
         || (frame && settings.pausedSites.includes(frame))) {
       return { disabled: true, issues: [] };
+    }
+    if (preview) {
+      if (!inline || typeof message.text !== "string") return { unavailable: true, issues: [] };
+      return fallbackCheck(message.text.slice(0, MAX_TEXT), settings.language, hint, settings.ignoredRules,
+        settings.personalDictionary, settings.styleHints);
     }
     return check(message.text, hint, settings);
   }).then(reply, () => reply({ unavailable: true, issues: [] }));
