@@ -28,7 +28,6 @@
     state.revision++;
     state.view = null;
     state.issues = [];
-    state.engine = null;
     marks.clear();
   }
 
@@ -56,22 +55,40 @@
       current.ignored.clear();
     }
     const revision = current.revision;
+    const hint = editorApi.languageHint(current.editor);
+    const caret = editorApi.caretOffset(current.editor, view);
+    const distance = section => Math.max(section.start - caret, caret - section.end + 1, 0);
+    const sections = editorApi.checkSections(view.text).sort((a, b) => distance(a) - distance(b));
+    const findings = [];
     checking = true;
     try {
-      const response = await chrome.runtime.sendMessage({
-        action: "grammar.check", text: view.text, hint: editorApi.languageHint(current.editor), site
-      });
-      if (current !== state || revision !== current.revision || !current.editor.isConnected || !enabled()) return;
-      const latest = editorApi.snapshot(current.editor);
-      if (latest.text !== view.text) {
-        invalidate();
-        schedule();
-        return;
-      }
-      if (response && !response.disabled && !response.unavailable) {
+      for (const section of sections) {
+        if (!section.text.trim()) continue;
+        const key = JSON.stringify([hint, section.text]);
+        const cached = current.cache.get(key);
+        const response = cached ?? await chrome.runtime.sendMessage({
+          action: "grammar.check", text: section.text, hint, site
+        });
+        if (current !== state || revision !== current.revision || !current.editor.isConnected || !enabled()) return;
+        const latest = cached && current.view ? current.view : editorApi.snapshot(current.editor);
+        if (latest.incomplete || latest.text !== view.text) {
+          invalidate();
+          schedule();
+          return;
+        }
+        if (!response || response.disabled || response.unavailable) return;
+        if (!cached && response.engine === "wasm") {
+          if (current.cache.size >= 48) current.cache.delete(current.cache.keys().next().value);
+          current.cache.set(key, response);
+        }
+        for (const issue of response.issues) {
+          const start = section.offset + issue.start;
+          const end = section.offset + issue.end;
+          if (start < section.start || start > section.end || (start === section.end && section.end !== view.text.length)) continue;
+          findings.push({ ...issue, start, end, fallback: response.engine === "fallback" });
+        }
         current.view = latest;
-        current.issues = response.issues;
-        current.engine = response.engine;
+        current.issues = findings.toSorted((a, b) => a.start - b.start || a.end - b.end);
         render();
       }
     } catch {
@@ -132,7 +149,7 @@
       },
       ignoreRule: () => save("ignoredRules", issue.id),
       addWord: isWord ? () => save("personalDictionary", dictionaryWord) : null,
-      fallback: current.engine === "fallback",
+      fallback: issue.fallback,
       next: (next, items) => show(next, anchor, items),
       group,
       apply: editorApi.canReplace(current.view, issue) ? (replacement, target = issue) => {
@@ -182,7 +199,7 @@
     changes.disconnect();
     resized.disconnect();
     state = editor && enabled() ? {
-      editor, revision: 0, view: null, issues: [], ignored: new Set(), ignoredText: ""
+      editor, revision: 0, view: null, issues: [], ignored: new Set(), ignoredText: "", cache: new Map()
     } : null;
     if (!state) return;
     changes.observe(editor, {
@@ -201,6 +218,7 @@
       activate(null);
     } else if (state) {
       if (document.activeElement === marks.host) closeCard(true);
+      state.cache.clear();
       invalidate();
       schedule(0);
     } else {
@@ -234,10 +252,10 @@
     if (!start || !state?.view || start.editor !== state.editor || event.button !== 0 || event.detail < 1
         || event.shiftKey || event.ctrlKey || event.altKey || event.metaKey
         || editorApi.editorFor(event) !== state.editor) return;
-    if (animation !== null) {
-      cancelAnimationFrame(animation);
-      draw();
-    }
+    // Host pages can reposition an editor without a resize or scroll event.
+    // Recompute rectangles before hit-testing any committed click.
+    if (animation !== null) cancelAnimationFrame(animation);
+    draw();
     const hits = marks.hits.filter(({ box }) => event.clientX >= box.left && event.clientX <= box.right
       && event.clientY >= box.top && event.clientY <= box.bottom)
       .sort((a, b) => Number(b.issue.start === b.issue.end) - Number(a.issue.start === a.issue.end));
@@ -277,10 +295,7 @@
   document.addEventListener("keydown", event => {
     if (!state?.view || event.isComposing || event.target === marks.host
         || !event.altKey || !event.shiftKey || event.ctrlKey || event.metaKey || event.code !== "KeyG") return;
-    const editor = state.editor;
-    const selection = editor.getRootNode().getSelection?.() ?? document.getSelection();
-    const segment = state.view.segments?.find(item => item.node === selection?.anchorNode);
-    const caret = state.view.plain ? editor.selectionStart : segment ? segment.start + selection.anchorOffset : 0;
+    const caret = editorApi.caretOffset(state.editor, state.view);
     const distance = ({ issue }) => Math.max(issue.start - caret, caret - issue.end, 0);
     const hit = [...(marks.hits || [])].sort((a, b) => distance(a) - distance(b))[0];
     if (hit) {

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { after, test } from "node:test";
 import { checkWithWasm } from "../../engine/lingotweaker.js";
+import { score } from "../../scripts/quality/scoring.js";
 
 const fetchBefore = globalThis.fetch;
 const allowedFiles = new Map([
@@ -224,4 +225,14 @@ test("German word forms preserve valid ambiguity and fixed expressions", async (
   const { issues } = await checkWithWasm(text, "de", "", [], [], false);
   assert.deepEqual(issues.filter(issue => ["DE_ORT_NOMEN", "DE_PRAEPOSITION_KASUS", "DE_SUBJEKT_VERB",
     "DE_SEIN_KONGRUENZ", "DE_KOMMA_NEBENSATZ"].includes(issue.id)), []);
+});
+
+test("priority German corrections keep the first suggestion and avoid marking clean controls", async () => {
+  const fixtures = JSON.parse(await readFile(new URL("../fixtures/de-quality.json", import.meta.url), "utf8"));
+  const predictions = [];
+  for (const { text } of fixtures) predictions.push((await checkWithWasm(text, "de", "", [], [], false)).issues);
+  const result = score(fixtures, predictions);
+  assert.equal(result.first, result.references, JSON.stringify(result.missed));
+  assert.equal(result.cleanFindings, 0, JSON.stringify(fixtures
+    .flatMap((row, index) => row.edits.length || !predictions[index].length ? [] : [{ id: row.id, issues: predictions[index] }])));
 });

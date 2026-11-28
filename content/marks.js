@@ -162,12 +162,13 @@
       } else if (editor.wrap.toLowerCase() === "off") {
         this.mirror.style.whiteSpace = "pre";
       }
-      const node = document.createTextNode(text);
-      // A trailing newline has an empty visual line in the native control.
-      this.mirror.replaceChildren(node, document.createTextNode("\u200b"));
+      if (this.mirror.firstChild?.data !== text) {
+        // A trailing newline has an empty visual line in the native control.
+        this.mirror.replaceChildren(document.createTextNode(text), document.createTextNode("\u200b"));
+      }
       this.mirror.scrollLeft = editor.scrollLeft;
       this.mirror.scrollTop = editor.scrollTop;
-      return node;
+      return this.mirror.firstChild;
     }
 
     render(editor, view, issues) {

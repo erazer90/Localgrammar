@@ -123,7 +123,8 @@ export async function checkWithWasm(value, preference, hint, dictionary, ignored
     if (unique.has(key)) continue;
     unique.add(key);
     result.issues.push({ id, start, end, original, message, kind,
-      suggestions: (spelling && language === "de" ? rankSpelling(original, suggestions) : suggestions).slice(0, 8) });
+      suggestions: (spelling && language === "de" ? rankSpelling(original, suggestions, lexicon,
+        text.slice(Math.max(0, start - 120), start), text.slice(end, end + 8)) : suggestions).slice(0, 8) });
   }
   result.issues = restore(finishIssues(text, language, result.issues, ignored, dictionary, styleHints, lexicon));
   return result;

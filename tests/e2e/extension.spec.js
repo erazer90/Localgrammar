@@ -22,6 +22,8 @@ let profile;
 let context;
 let origin;
 let extension;
+const browserBinary = process.env.LGP_BROWSER_EXECUTABLE;
+const extensionDir = process.env.LGP_EXTENSION_DIR ?? root;
 
 test.beforeAll(async () => {
   server = createServer((_request, response) => {
@@ -38,9 +40,9 @@ test.beforeAll(async () => {
   origin = `http://127.0.0.1:${server.address().port}`;
   profile = await mkdtemp(join(tmpdir(), "lgp-chromium-"));
   context = await chromium.launchPersistentContext(profile, {
-    channel: "chromium",
+    ...(browserBinary ? { executablePath: browserBinary } : { channel: "chromium" }),
     args: [
-      `--disable-extensions-except=${root}`, `--load-extension=${root}`,
+      `--disable-extensions-except=${extensionDir}`, `--load-extension=${extensionDir}`,
       "--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE 127.0.0.1", "--no-proxy-server"
     ]
   });
@@ -328,6 +330,98 @@ test("dictionary case correction can be applied and undone in a text field", asy
     await expect(editor).toHaveValue("Ich spreche mit meinem Chef.");
     await page.keyboard.press("Control+z");
     await expect(editor).toHaveValue(text);
+  } finally {
+    await page.close();
+  }
+});
+
+test("clicks follow a rich editor after zoom, scrolling and a tab switch", async () => {
+  const page = await context.newPage();
+  const otherTab = await context.newPage();
+  try {
+    await page.goto(origin);
+    await page.bringToFront();
+    const editor = page.locator("#editor");
+    await editor.evaluate(node => {
+      node.parentElement.style.height = "135vh";
+      node.contentEditable = "true";
+      node.innerHTML = "Die <em>Gramatik</em> ist wichtig.";
+      node.focus();
+    });
+    await expect(page.locator("local-grammar-pro")).toHaveCount(1);
+    await otherTab.goto(origin);
+    await otherTab.bringToFront();
+    await page.bringToFront();
+    await editor.evaluate(node => scrollTo(0, node.offsetTop - 10));
+    const point = await editor.locator("em").evaluate(element => {
+      const wrapper = element.closest("#editor").parentElement;
+      wrapper.style.transformOrigin = "top left";
+      wrapper.style.transform = "translate(50px, 22px) scale(1.3)";
+      const range = new Range();
+      range.selectNodeContents(element);
+      const box = range.getBoundingClientRect();
+      return { x: (box.left + box.right) / 2, y: box.top + box.height / 3 };
+    });
+    await page.mouse.click(point.x, point.y);
+    await applyFirstSuggestion(page);
+    await expect(editor.locator("em")).toHaveText("Grammatik");
+    await page.keyboard.press("Control+z");
+    await expect(editor.locator("em")).toHaveText("Gramatik");
+  } finally {
+    await otherTab.close();
+    await page.close();
+  }
+});
+
+test("a correction beyond character 12000 uses the editor's current offsets and supports undo", async () => {
+  const page = await context.newPage();
+  try {
+    await page.goto(origin);
+    const editor = page.locator("#plain");
+    const prefix = "Die Unterlagen liegen bereits in diesem Ordner.\n".repeat(285);
+    const text = prefix + "Die Gramatik ist wichtig.";
+    await editor.fill(text);
+    await editor.evaluate(node => {
+      node.setSelectionRange(node.value.length, node.value.length);
+      node.scrollTop = node.scrollHeight;
+    });
+    await expect(page.locator("local-grammar-pro")).toHaveCount(1);
+    // Use the upper half of the final word, rather than the underline.
+    const click = await editor.evaluate(node => {
+      const css = getComputedStyle(node);
+      const canvas = document.createElement("canvas").getContext("2d");
+      canvas.font = css.font;
+      const box = node.getBoundingClientRect();
+      const line = parseFloat(css.lineHeight);
+      return { x: box.left + node.clientLeft + parseFloat(css.paddingLeft) + canvas.measureText("Die Gra").width,
+        y: box.top + node.clientTop + node.scrollHeight - node.scrollTop - parseFloat(css.paddingBottom) - line * 0.65 };
+    });
+    await page.mouse.click(click.x, click.y);
+    await applyFirstSuggestion(page);
+    await expect(editor).toHaveValue(prefix + "Die Grammatik ist wichtig.");
+    await page.keyboard.press("Control+z");
+    await expect(editor).toHaveValue(text);
+  } finally {
+    await page.close();
+  }
+});
+
+test("a silent editor update cannot apply a suggestion to the previous text", async () => {
+  const page = await context.newPage();
+  try {
+    await page.goto(origin);
+    const editor = page.locator("#plain");
+    const replacement = "Die Unterlagen liegen im Ordner.";
+    await editor.focus();
+    await expect(page.locator("local-grammar-pro")).toHaveCount(1);
+    await page.keyboard.press("Alt+Shift+g");
+    await expect(page.locator("local-grammar-pro")).toBeFocused();
+    await editor.evaluate((node, value) => { node.value = value; }, replacement);
+    await page.keyboard.press("Tab");
+    await page.keyboard.press("Tab");
+    await page.keyboard.press("Enter");
+    await expect(editor).toHaveValue(replacement);
+    await expect(page.locator("local-grammar-pro")).toHaveCount(0);
   } finally {
     await page.close();
   }
