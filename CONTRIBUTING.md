@@ -21,6 +21,8 @@ Auf Linux können für Chromium Systembibliotheken nötig sein. `npx playwright 
 
 `npm run check` prüft JavaScript, Manifestpfade und die Prüfsummen der eingebundenen Engine und Sprachpakete. Die Node-Tests führen die lokale WASM-Engine und die Regex-Ersatzprüfung aus. Playwright prüft die installierte MV3-Erweiterung in Chromium mit einem temporären Profil und lokalen HTML-Editoren. Verwende in Tests und Fehlerberichten erfundene Texte.
 
+Mit `LGP_BROWSER_EXECUTABLE=/absoluter/pfad/zu/msedge npm run test:e2e` lässt sich dieselbe Suite in Edge ausführen. `LGP_EXTENSION_DIR` akzeptiert den absoluten Pfad eines entpackten Release-Archivs. [Deutscher Qualitätsvergleich](docs/quality.md)
+
 Bei einem Update der Engine gehören die Binärdateien, Sprachpakete, Herkunftsangaben und SHA-256-Werte zusammen. [Vendor-Dokumentation](engine/vendor/SOURCE.md)
 
 ## Ein Release erstellen

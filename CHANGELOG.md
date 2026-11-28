@@ -1,5 +1,14 @@
 # Changelog
 
+## 4.2.0
+
+- Zusätzliche Pflichtkommas an den Grenzen von Relativsätzen und erweiterten Infinitivgruppen.
+- Deutsche Kasusprüfung für zusammengesetzte Nomen wie „Kinderarzt“. Mehr passende Verbformen, auch wenn zwischen Subjekt und Verb weitere Satzteile stehen.
+- Bei Rechtschreibvorschlägen werden Buchstabendreher und passende Verbformen in kurzen Fragen stärker gewichtet.
+- Inline-Prüfung für bis zu 48.000 UTF-16-Codeeinheiten pro Feld. Der Bereich am Cursor wird zuerst geprüft.
+- Die Klickposition wird auch dann neu berechnet, wenn eine Website das Textfeld ohne Scroll- oder Größenänderung verschiebt.
+- Reproduzierbarer deutscher Qualitätsvergleich und zusätzliche Browser-Tests für Klick, Rückgängig und veraltete Vorschläge.
+
 ## 4.1.3
 
 - Deutsche Kasusprüfung nutzt die Wortformen aus dem mitgelieferten Wörterbuch. Sie erkennt Formen wie „mit mein Chef“, „mit ihre Kinder“ und „bei unser neuer Nachbar“.

@@ -10,7 +10,8 @@
     "verify": "node scripts/verify-extension.js",
     "test": "node --test tests/unit/*.test.js",
     "test:e2e": "playwright test",
-    "build": "node scripts/build.js"
+    "build": "node scripts/build.js",
+    "benchmark:de": "node scripts/quality/run.js"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

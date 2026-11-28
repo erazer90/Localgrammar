@@ -21,7 +21,7 @@ Markierte Wörter anklicken, Vorschläge ansehen und direkt übernehmen. Benachb
 ## Installation
 
 1. Das ZIP aus dem [aktuellen Release](https://github.com/erazer90/Localgrammar/releases/latest) herunterladen und entpacken.
-2. In Chrome oder Chromium ab Version 123 unter `chrome://extensions` den **Entwicklermodus** aktivieren.
+2. In Chrome oder Chromium ab Version 123 unter `chrome://extensions` den **Entwicklermodus** aktivieren. In Microsoft Edge findest du ihn unter `edge://extensions`.
 3. **Entpackte Erweiterung laden** und den Ordner `LocalGrammarPro` auswählen.
 4. Offene Webseiten neu laden und losschreiben.
 
@@ -29,10 +29,10 @@ Für ein Update den Inhalt des bisherigen Installationsordners ersetzen und die 
 
 ## Lokale Prüfung
 
-Engine und Sprachpakete sind enthalten. Texte werden auf dem Gerät verarbeitet. Die erste Prüfung benötigt etwas Ladezeit. Pro Prüfung werden bis zu 12.000 Zeichen am Textanfang verarbeitet. Canvas-Editoren wie Google Docs unterstützen keine direkten Inline-Korrekturen.
+Engine und Sprachpakete sind enthalten. Die erste Prüfung benötigt etwas Ladezeit. Inline werden pro Feld bis zu 48.000 UTF-16-Codeeinheiten abschnittsweise geprüft, beginnend am Cursor. Die Prüfung über das Kontextmenü verarbeitet bis zu 12.000 UTF-16-Codeeinheiten der Auswahl. Canvas-Editoren wie Google Docs unterstützen keine direkten Inline-Korrekturen.
 
 [Engine und Sprachdaten](engine/vendor/SOURCE.md) · [Lizenzhinweise](LICENSES.md) · [Stand der Weitergaberechte](DISTRIBUTION.md) · [Änderungen](CHANGELOG.md)
 
 ## Entwicklung
 
-Node.js 24 verwenden und `npm ci`, `npm run check`, `npm test` sowie `npm run build` ausführen. Browser-Tests und Beiträge beschreibt die [Entwicklungsanleitung](CONTRIBUTING.md).
+Node.js 24 verwenden und `npm ci`, `npm run check`, `npm test` sowie `npm run build` ausführen. [Entwicklungsanleitung](CONTRIBUTING.md) · [Deutsche Prüfqualität](docs/quality.md)

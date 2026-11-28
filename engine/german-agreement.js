@@ -1,3 +1,5 @@
+import { inflectNoun, nounReadings } from "./german-compounds.js";
+
 const token = "[\\p{L}\\p{M}]+(?:[-‑][\\p{L}\\p{M}]+)*";
 const fixedPrepositions = new Map([
   ["mit", "DAT"], ["bei", "DAT"], ["von", "DAT"], ["zu", "DAT"], ["aus", "DAT"], ["seit", "DAT"],
@@ -14,25 +16,20 @@ const prepositionPattern = new RegExp(`(?<![\\p{L}\\p{M}.-])(${[...fixedPreposit
 const followingWords = new RegExp(`^[ \\t]+(${token})(?:[ \\t]+(${token}))?(?:[ \\t]+(${token}))?`, "du");
 const clausePattern = /(?:^|[.!?;:,\n][ \t]*)[ \t]*(?:(?:dass|weil|ob|wenn)\s+)?([^.!?;:,\n]+)/giu;
 const spelledNoun = /^\p{Lu}/u;
-const nounTag = /^SUB:(NOM|DAT|AKK|GEN):(SIN|PLU):(MAS|FEM|NEU|NOG)$/u;
 const determinerTag = /^(ART:(?:DEF|IND)|PRO:(?:POS|DEM|IND)):(NOM|DAT|AKK|GEN):(SIN|PLU):(MAS|FEM|NEU)(?::(BEG|B\/S))?$/u;
 const adjectiveTag = /^ADJ:(NOM|DAT|AKK|GEN):(SIN|PLU):(MAS|FEM|NEU):([^:]+):(DEF|IND|SOL)$/u;
 const verbTag = /^(VER(?::(?:AUX|MOD))?):([123]):(SIN|PLU):(PRÄ|PRT|KJ1|KJ2)((?::[^:]+)*)$/u;
 const persons = new Map([
   ["ich", ["1", "SIN"]], ["du", ["2", "SIN"]], ["er", ["3", "SIN"]], ["wir", ["1", "PLU"]]
 ]);
+const interveningPrepositions = /^(?:in|an|auf|vor|hinter|unter|über|neben|zwischen|aus|bei|von|zu)$/u;
 
 const capitalize = word => word[0].toUpperCase() + word.slice(1);
 const compatibleGender = (left, right) => left === right || right === "NOG";
 
 function nouns(lexicon, word) {
-  const exact = lexicon.analyses(word);
-  if (!spelledNoun.test(word) && exact.length) return [];
-  const surface = spelledNoun.test(word) ? word : capitalize(word);
-  return lexicon.analyses(surface).flatMap(entry => {
-    const tag = nounTag.exec(entry.tag);
-    return tag ? [{ lemma: entry.word, surface, grammaticalCase: tag[1], number: tag[2], gender: tag[3] }] : [];
-  });
+  if (!spelledNoun.test(word) && lexicon.analyses(word).length) return [];
+  return nounReadings(lexicon, spelledNoun.test(word) ? word : capitalize(word));
 }
 
 function determiners(lexicon, word) {
@@ -88,8 +85,7 @@ function nounPhrases(lexicon, determiner, adjective, noun, targetCase) {
       const articleTag = [a.type, targetCase, n.number, gender, a.use].filter(Boolean).join(":");
       const articleWords = hasFeatures(a, n, targetCase) ? [determiner]
         : inflectArticle(lexicon, determiner, a, articleTag).map(word => spelledNoun.test(determiner) ? capitalize(word) : word.toLowerCase());
-      const nounsInCase = n.grammaticalCase === targetCase ? [n.surface]
-        : lexicon.inflections(n.lemma, `SUB:${targetCase}:${n.number}:${n.gender}`);
+      const nounsInCase = inflectNoun(lexicon, n, targetCase);
       const adjectivesInCase = adjective ? compatibleAdjectives.flatMap(form => (
         form.grammaticalCase === targetCase ? [adjective]
           : lexicon.inflections(form.lemma, `ADJ:${targetCase}:${n.number}:${form.gender}:${form.degree}:${declension}`)
@@ -163,6 +159,25 @@ function prepositionalIssues(text, lexicon, add) {
   }
 }
 
+function embeddedPhraseEnd(words, lexicon) {
+  const [first, second, third] = words.slice(2, 5).map(([word]) => word);
+  if (!third) return 2;
+  if (interveningPrepositions.test(first)) {
+    const articles = determiners(lexicon, second);
+    if (spelledNoun.test(third) && nouns(lexicon, third).some(noun =>
+      ["DAT", "AKK"].includes(noun.grammaticalCase)
+      && articles.some(article => hasFeatures(article, noun, noun.grammaticalCase)))) return 5;
+    return 2;
+  }
+  const articles = determiners(lexicon, first).filter(article => article.grammaticalCase === "GEN");
+  if (!articles.length) return 2;
+  const adjective = !spelledNoun.test(second) && lexicon.analyses(second).some(({ tag }) => tag.startsWith("ADJ:GEN:"));
+  const head = adjective ? third : second;
+  if (!spelledNoun.test(head)) return 2;
+  return nouns(lexicon, head).some(noun => noun.grammaticalCase === "GEN"
+    && articles.some(article => hasFeatures(article, noun, "GEN"))) ? (adjective ? 5 : 4) : 2;
+}
+
 function verbalIssues(text, lexicon, add) {
   const wordTokens = new RegExp(token, "gu");
   for (const clause of text.matchAll(clausePattern)) {
@@ -172,15 +187,16 @@ function verbalIssues(text, lexicon, add) {
     if (words.length < 2 || words[0].index !== 0) continue;
     const first = words[0][0].toLowerCase();
     let subject = persons.get(first);
-    const verbIndex = subject ? 1 : 2;
+    let verbIndex = subject ? 1 : 2;
     if (!subject && words.length >= 3 && spelledNoun.test(words[1][0])) {
       const articles = determiners(lexicon, first);
       const readings = nouns(lexicon, words[1][0]).filter(noun => noun.grammaticalCase === "NOM"
         && articles.some(article => hasFeatures(article, noun, "NOM")));
       const numbers = new Set(readings.map(noun => noun.number));
+      if (numbers.size === 1) verbIndex = embeddedPhraseEnd(words, lexicon);
       // A following nominative can be the actual subject in an inverted
       // sentence. Keep ambiguous cases out of this local rule.
-      const possibleSubject = words.slice(3).some(([word]) => spelledNoun.test(word)
+      const possibleSubject = words.slice(verbIndex + 1).some(([word]) => spelledNoun.test(word)
         || /^(?:ich|du|er|sie|es|wir|ihr|man|wer|jemand|niemand)$/iu.test(word));
       if (numbers.size === 1 && !possibleSubject) subject = ["3", [...numbers][0]];
     }
@@ -196,7 +212,8 @@ function verbalIssues(text, lexicon, add) {
     if (!finite.length || finite.some(form => form.person === person && form.number === number)) continue;
     const primary = finite.filter(form => form.mood === "PRÄ" || form.mood === "PRT");
     const forms = [...new Set((primary.length ? primary : finite).flatMap(form =>
-      lexicon.inflections(form.lemma, `${form.type}:${person}:${number}:${form.mood}${form.detail}`)))];
+      lexicon.inflections(form.lemma, `${form.type}:${person}:${number}:${form.mood}${form.detail}`)
+        .map(word => spelledNoun.test(verb[0]) ? capitalize(word) : word.toLowerCase())))];
     const standard = person === "1" && number === "SIN" && forms.length === 2
       ? forms.find(value => forms.includes(value.slice(0, -1)) && value.endsWith("e")) : undefined;
     const suggestion = standard ?? (forms.length === 1 ? forms[0] : undefined);

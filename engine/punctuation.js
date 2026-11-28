@@ -1,3 +1,5 @@
+import { agreesWithSubject, relativeCommas, unambiguousFinite } from "./relative.js";
+
 // Clause boundaries and mandatory commas, based on §§ 71 and 73 of the
 // Amtliches Regelwerk (2024): https://grammis.ids-mannheim.de/rechtschreibung/6199
 const subordinators = new Set([
@@ -11,18 +13,11 @@ const relativeSubject = /^(?:ich|du|er|sie|es|wir|ihr|man)$/u;
 const relativePronoun = /^(?:der|die|das|den|dem|dessen|deren)$/u;
 const coordination = /^(?:und|oder|sowie|weder|noch|beziehungsweise|sowohl|entweder)$/u;
 const reporting = /(?<!\p{L})(?:frag\w*|weiß|wusst\w*|wiss\w*|wüsst\w*|sah\w*|seh\w*|hör\w*|zeig\w*|erklär\w*|sag\w*|versteh\w*|verstand\w*|überleg\w*|erinner\w*|entscheid\w*|entschied\w*)(?!\p{L})/iu;
-const infinitiveGovernor = /^(?:versuch(?:e|st|t|te|ten|en)|hoff(?:e|st|t|te|ten|en)|plan(?:e|st|t|te|ten|en)|vergiss|vergess(?:e|en|t)|vorschlag|absicht|aufgabe|angst|lust|möglichkeit|entschied(?:en)?|beschloss(?:en)?|versprach(?:en)?)$/iu;
+const infinitiveGovernor = /^(?:versuch(?:e|st|t|te|ten|en)|hoff(?:e|st|t|te|ten|en)|plan(?:e|st|t|te|ten|en)|vergiss|vergess(?:e|en|t)|vorschlag|absicht|aufgabe|angst|lust|möglichkeit|entschied(?:en)?|beschloss(?:en)?|versprach(?:en)?|versprochen)$/iu;
 const finite = /^(?:bin|bist|ist|sind|seid|war(?:en|st|t)?|hab(?:e|en|t)|ha(?:st|t)|hatt(?:e|est|en|et)|werd(?:e|en|et)|wirst|wird|wurd(?:e|est|en|et)|kann(?:st)?|könn(?:en|t)|muss(?:t)?|müss(?:en|t)|will(?:st)?|woll(?:en|t)|soll(?:st|t|en)?|darf(?:st)?|dürf(?:en|t)|regnet|schneit|bleib(?:e|st|t|en)|komm(?:e|st|t|en)|geh(?:e|st|t|en)|fahr(?:e|st|t|en)|sag(?:e|st|t|en))$/iu;
 const imperative = /^(?:melde|sag|sage|ruf|rufe|komm|komme|geh|gehe|bleib|bleibe|schreib|schreibe|nimm|bring|bringe|warte|mach|mache|lass)$/iu;
 const clausePieces = /[^,.!?;:…\n\r]+/gu;
 const wordPattern = /\p{L}[\p{L}\p{M}’'–-]*/gu;
-
-function unambiguousFinite(word, lexicon) {
-  if (!lexicon) return false;
-  const entries = lexicon.analyses(word);
-  return entries.some(({ tag }) => /^VER:(?:(?:AUX|MOD):)?[123]:(?:SIN|PLU):/u.test(tag))
-    && entries.every(({ tag }) => tag.startsWith("VER:") && !tag.includes(":INF"));
-}
 
 function clauseCommas(text, add, lexicon) {
   for (const clause of text.matchAll(clausePieces)) {
@@ -70,12 +65,13 @@ function clauseCommas(text, add, lexicon) {
       // An unexpanded zu-infinitive can be integrated in the predicate.
       const isInfinitive = (infinitiveMarker && hasInfinitive)
         || (hasGovernor && laterWords.length >= 2 && hasInfinitive && (hasSubject
-          || /^(?:ihn|sie|es|sie alle|uns|euch|noch|heute|morgen|rechtzeitig)\b/u.test(next[0])
+          || /^(?:ihn|sie|es|sie alle|uns|euch|noch|heute|morgen|rechtzeitig|pünktlich)\b/u.test(next[0])
           || /^(?:den|dem|der|die|das|ein|eine|einen|meine|deine|seine)\b/u.test(next[0])));
       const closesSubordinate = i >= 3 && !boundary?.match(/[:,]/u)
         && (subordinators.has(initial) || ambiguous.has(initial))
         && (finite.test(previous[0]) || unambiguousFinite(previous[0], lexicon))
-        && (imperative.test(next[0]) || finite.test(next[0]) || unambiguousFinite(next[0], lexicon))
+        && (imperative.test(next[0]) || finite.test(next[0]) || unambiguousFinite(next[0], lexicon)
+          || agreesWithSubject(next[0], words[i + 1][0], lexicon))
         && /^(?:ich|du|er|sie|es|wir|ihr|man|bitte|mich|dich|uns)$/iu.test(words[i + 1][0]);
       const closesRelative = relativeStart >= 0 && relativeStart + 2 < i
         && (lexicon
@@ -86,6 +82,7 @@ function clauseCommas(text, add, lexicon) {
           "", ",", isInfinitive ? "Die Infinitivgruppe wird durch ein Komma abgegrenzt." : "Hier trennt ein Komma die Satzteile.");
       }
     }
+    if (lexicon) relativeCommas(text, clause, words, lexicon, add);
   }
 }
 

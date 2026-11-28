@@ -1,10 +1,10 @@
 # Datenschutz
 
-Stand: 27. November 2026. Diese Beschreibung gilt für den Quellcode dieses Branches und daraus neu gebaute Erweiterungen. Das bereits veröffentlichte ZIP 4.0.0 enthält spätere Änderungen nicht.
+Stand 27. November 2026. Diese Beschreibung gilt ab Version 4.2.0.
 
 ## Welche Texte verarbeitet werden
 
-Die aktivierte Inline-Prüfung liest den Anfang des gerade fokussierten, unterstützten Eingabefelds auf HTTP- und HTTPS-Websites, auch in eingebetteten Frames. Die Prüfung verarbeitet höchstens 12.000 UTF-16-Codeeinheiten; für die Begrenzung werden bis zu zwei zusätzliche Einheiten erfasst. Texte und Ergebnisse werden innerhalb der Erweiterung an den lokalen Worker übergeben. Sie können während der Prüfung und für die Anzeige der Hinweise im Arbeitsspeicher liegen.
+Die aktivierte Inline-Prüfung liest bis zu 48.000 UTF-16-Codeeinheiten am Anfang des gerade fokussierten, unterstützten Eingabefelds auf HTTP- und HTTPS-Websites, auch in eingebetteten Frames. Die Erweiterung übergibt den Text abschnittsweise an den lokalen Worker und beginnt in der Nähe des Cursors. Textabschnitte und Ergebnisse können im Arbeitsspeicher liegen. Unveränderte Abschnitte des aktiven Felds werden aus dem Arbeitsspeicher wiederverwendet, bis der Fokus das Feld verlässt oder sich die Einstellungen ändern.
 
 Passwortfelder, schreibgeschützte und deaktivierte Felder sowie Felder mit sensiblen `autocomplete`-Angaben (Benutzername, Passwort, Einmalcode, Kreditkarte) werden von der Inline-Prüfung ausgeschlossen. Das gilt auch für entsprechend markierte bearbeitbare Bereiche. Eine Website kann ein Feld oder einen übergeordneten Bereich mit dem Attribut `data-local-grammar-ignore` ausschließen, auch innerhalb zugänglicher Shadow-DOMs. Ausgeschlossene Teilbereiche eines Editors werden beim Erfassen des Texts übersprungen.
 

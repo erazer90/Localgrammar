@@ -1,5 +1,6 @@
 (() => {
-  const MAX_CAPTURE = 12002;
+  const MAX_CAPTURE = 48000;
+  const CHECK_SIZE = 1800;
   const TEXT_INPUTS = new Set(["text", "search"]);
   const PRIVATE_AUTOCOMPLETE = /(?:^|\s)(?:username|(?:current|new)-password|one-time-code|cc-\S+)(?:\s|$)/i;
 
@@ -50,7 +51,7 @@
   }
 
   function snapshot(editor) {
-    if (isPlain(editor)) return { text: editor.value.slice(0, MAX_CAPTURE), plain: true };
+    if (isPlain(editor)) return { text: capturedText(editor.value), plain: true };
 
     const segments = [];
     const boundaries = [];
@@ -99,7 +100,53 @@
     }
 
     for (let child = editor.firstChild; child && visited <= 6000 && text.length < MAX_CAPTURE; child = child.nextSibling) visit(child);
-    return { text, plain: false, segments, boundaries, incomplete: visited > 6000 };
+    return { text: capturedText(text, text.length >= MAX_CAPTURE), plain: false, segments, boundaries, incomplete: visited > 6000 };
+  }
+
+  function capturedText(text, limited = text.length > MAX_CAPTURE) {
+    if (!limited) return text;
+    const prefix = text.slice(0, MAX_CAPTURE).replace(/[\uD800-\uDBFF]$/u, "");
+    const boundary = prefix.search(/\s[^\s]{0,160}$/u);
+    return boundary >= 0 ? prefix.slice(0, boundary + 1) : prefix;
+  }
+
+  function checkSections(text) {
+    const sections = [];
+    let start = 0;
+    let previousSplitSentence = false;
+    while (start < text.length) {
+      const possibleEnd = Math.min(start + CHECK_SIZE, text.length);
+      const piece = text.slice(start, possibleEnd);
+      const boundaries = [...piece.matchAll(/(?:\n+|[.!?][”»"]?[ \t]+)/gu)];
+      const last = boundaries.at(-1);
+      const sentenceEnd = last ? last.index + last[0].length : 0;
+      const space = piece.match(/\s(?=\S{0,150}$)/u);
+      const splitSentence = possibleEnd < text.length && sentenceEnd < CHECK_SIZE / 2;
+      let end = possibleEnd === text.length ? possibleEnd
+        : start + (splitSentence ? (space?.index ?? CHECK_SIZE - 1) + 1 : sentenceEnd);
+      if (/[\uD800-\uDBFF]/u.test(text[end - 1])) end--;
+      // Keep context on either side of an artificial break. Only the section
+      // owning the start of a finding displays it.
+      const overlapStart = Math.max(0, start - 200);
+      const prefixLength = previousSplitSentence ? text.slice(overlapStart, start).search(/\s/u) + 1 : 0;
+      const offset = previousSplitSentence ? overlapStart + (prefixLength || Number(overlapStart > 0
+        && /[\uDC00-\uDFFF]/u.test(text[overlapStart]))) : start;
+      const overlapEnd = Math.min(text.length, end + 200);
+      const suffix = splitSentence ? text.slice(end, overlapEnd) : "";
+      const spaceEnd = suffix.search(/\s\S*$/u);
+      const suffixLength = spaceEnd >= 0 ? spaceEnd + 1 : suffix.replace(/[\uD800-\uDBFF]$/u, "").length;
+      sections.push({ start, end, offset, text: text.slice(offset, end + suffixLength) });
+      previousSplitSentence = splitSentence;
+      start = end;
+    }
+    return sections;
+  }
+
+  function caretOffset(editor, view) {
+    if (view.plain) return editor.selectionStart ?? 0;
+    const selection = editor.getRootNode().getSelection?.() ?? document.getSelection();
+    const segment = view.segments.find(item => item.node === selection?.focusNode);
+    return segment ? segment.start + selection.focusOffset : 0;
   }
 
   function point(segments, offset, preferEnd) {
@@ -189,16 +236,18 @@
     // Chrome's native editing path keeps undo, formatting and framework input events.
     const command = replacement === "" ? "delete" : "insertText";
     if (document.execCommand(command, false, replacement)) return true;
-    if (!latest.plain || editor.value.slice(0, MAX_CAPTURE) !== checkedText) return false;
+    if (!latest.plain || capturedText(editor.value) !== checkedText) return false;
 
     const inputType = replacement ? "insertReplacementText" : "deleteContentBackward";
     const event = { bubbles: true, composed: true, inputType, data: replacement };
     if (!editor.dispatchEvent(new InputEvent("beforeinput", { ...event, cancelable: true }))
-        || editor.value.slice(0, MAX_CAPTURE) !== checkedText) return false;
+        || capturedText(editor.value) !== checkedText) return false;
     editor.setRangeText(replacement, start, end, "end");
     editor.dispatchEvent(new InputEvent("input", event));
     return true;
   }
 
-  globalThis.LGPEditor = { apply, canReplace, groupFor, editorFor, focused, languageHint, rangeFor, snapshot };
+  globalThis.LGPEditor = {
+    apply, canReplace, caretOffset, checkSections, groupFor, editorFor, focused, languageHint, rangeFor, snapshot
+  };
 })();
